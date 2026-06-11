@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>MindSafe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../static/css/styles.css" />
+</head>
+
+<body>
+    <!-- Navbar -->
+    <header class="nav">
+        <div class="nav__inner container">
+            <div class="nav__brand">
+                <div class="nav__logo-icon">
+                    <a href="/">
+                        <img class="nav__logo-image" src="/static/img/mind.png" alt="MindSafe logo" />
+                    </a>
+                </div>
+                <span class="nav__logo-text">MindSafe</span>
+            </div>
+
+            <nav class="nav__links">
+                <a href="#shows">Examples</a>
+                <a href="#metrics">Metrics</a>
+                <a href="#extension">Extension</a>
+                <a href="#demo">How It Works</a>
+            </nav>
+
+            <div class="nav__cta">
+                <a href="{{ url_for('form') }}" class="btn btn--primary">Try MindSafe</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main>
+        <section class="hero">
+            <div class="hero__inner container">
+                <!-- Left column -->
+                <div class="hero__content">
+                    <!-- <p class="hero__eyebrow">AI-powered neurosurgical planning</p> -->
+                    <h1 class="hero__title">
+                        We know quality kids' media
+                    </h1>
+                    <p class="hero__subtitle">
+                        MindSafe's experts, Oxford and Yale-trained in childhood development, are here to help you make
+                        confident and informed choices about screen time.
+                    </p>
+
+                    <div class="hero__actions">
+                        <a href="/templates/index.html" class="btn btn--primary">Start Free Trial</a>
+                        <a href="#demo" class="btn btn--secondary">View Demo</a>
+                    </div>
+
+                    <div class="hero__badges">
+                        <div class="badge">
+                            <span class="badge__icon">✓</span>
+                            <span class="badge__text">Trusted by childhood development experts</span>
+                        </div>
+                        <div class="badge">
+                            <span class="badge__icon">✓</span>
+                            <span class="badge__text">Oxford and Yale-trained experts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero__media">
+                    <div class="hero__media-inner">
+                        <div class="hero__brain">
+                            <img class="hero__brain-image" src="/static/img/young-boy-watching-tablet.jpg"
+                                alt="3D Brain Simulation" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- ====== TRUSTED BY SECTION ====== -->
+    <section class="trust">
+        <div class="container trust__inner">
+            <p class="trust__label">
+                TRUSTED BY LEADING HOSPITALS AND RESEARCH INSTITUTIONS
+            </p>
+            <div class="trust__logos">
+                <span>Johns Hopkins</span>
+                <span>Mayo Clinic</span>
+                <span>Stanford Health</span>
+                <span>Mass General</span>
+                <span>Cleveland Clinic</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== DEMO SECTION (“See it in action”) ====== -->
+    <section class="demo" id="demo">
+        <div class="container demo__inner">
+            <div class="demo__header">
+                <h2 class="demo__title">See it in action</h2>
+                <p class="demo__subtitle">
+                    Watch how MindSafe transforms surgical planning with real-time 3D simulation
+                    and AI analysis.
+                </p>
+            </div>
+
+            <div class="demo-card">
+                <div class="demo-card__inner">
+                    <!-- Play button / overlay -->
+                    <!-- <button class="demo-card__play" type="button">
+              <span class="demo-card__play-ring"></span>
+              <span class="demo-card__play-circle">
+                <span class="demo-card__play-icon">▶</span>
+              </span>
+            </button> -->
+
+                    <!-- <div class="demo-card__meta">
+              <div class="demo-card__label">Watch Demo</div>
+              <div class="demo-card__duration">3 minutes</div>
+            </div> -->
+
+                    <!-- Optional REAL video (replace src and remove the comment when ready) -->
+
+                    <video class="demo-card__video" src="../static/img/rick.mp4" controls></video>
+
+                </div>
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <!-- Metrics section -->
+    <div id="metrics"></div>
+
+    <!-- Example section -->
+    <div id="shows"></div>
+    
+    <!-- Extension section -->
+    <div id="extension"></div>
+
+    <!-- ======  FOOTER SECTION ====== -->
+    <section class="cta-footer">
+        <div class="cta-footer__gradient">
+            <div class="container cta-footer__inner">
+                <div class="cta-footer__content">
+                    <h2 class="cta-footer__title">Become a MindSafe Parent</h2>
+                    <p class="cta-footer__text">
+                        Join our waitlist and get ready for stress-free screen time with
+                        families like yours. Get community playlists, expert-backed
+                        recommendations, and early product updates. We’ll never sell your
+                        data, and we’re staunch enemies of spam!
+                    </p>
+
+                    <p class="cta-footer__legal">
+                        By sharing your email you explicitly accept our
+                        <a href="#" class="cta-footer__link">Terms</a> and
+                        <a href="#" class="cta-footer__link">Privacy Policy</a>.
+                    </p>
+
+                    <form class="cta-footer__form">
+                        <input type="email" class="cta-footer__input" placeholder="name@email.com" required />
+                        <button type="submit" class="btn btn--footer-primary">
+                            Join the Waitlist
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Cute animal on the right -->
+                <img src="/static/img/koala.png" alt="Friendly mascot" class="cta-footer__mascot" />
+            </div>
+        </div>
+
+        <!-- Bottom white footer bar -->
+        <footer class="site-footer">
+            <div class="container site-footer__inner">
+                <div class="site-footer__links">
+                    <a href="#">Terms and Conditions</a>
+                    <span>•</span>
+                    <a href="#">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="#">Contact us</a>
+                </div>
+
+                <div class="nav__brand">
+                    <div class="nav__logo-icon">
+                        <a href="/">
+                            <img class="nav__logo-image" src="/static/img/mind.png" alt="MindSafe logo" />
+                        </a>
+                    </div>
+                    <span class="nav__logo-text">MindSafe</span>
+                </div>
+            </div>
+        </footer>
+    </section>
+
+    <!-- Scripts -->
+    <script>
+        fetch('../templates/metrics.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('metrics').innerHTML = html;
+            })
+            .catch(err => console.error('Error loading metrics:', err));
+    </script>
+
+    <script>
+        fetch('../templates/shows.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('shows').innerHTML = html;
+            })
+            .catch(err => console.error('Error loading metrics:', err));
+    </script>
+
+    <script>
+        fetch('../templates/extension.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('extension').innerHTML = html;
+            })
+            .catch(err => console.error('Error loading extension:', err));
+    </script>
+
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>

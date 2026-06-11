@@ -1,0 +1,44 @@
+version: "3.9"
+
+# Production compose for EC2 t2.micro (1 GB RAM).
+# No Jaeger — OTel tracing disabled at this tier.
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+
+  api:
+    build:
+      context: ./ai-agents
+      dockerfile: Dockerfile
+      args:
+        INSTALL_ML_DEPS: "1"
+    image: mindsafe-api
+    ports:
+      - "5001:5001"
+    environment:
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_KEY: "${SUPABASE_KEY}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: mindsafe-frontend
+    ports:
+      - "5000:5000"
+    environment:
+      MINDSAFE_API_URL: "http://api:5001"
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_KEY: "${SUPABASE_KEY}"
+    depends_on:
+      - api
+    restart: unless-stopped

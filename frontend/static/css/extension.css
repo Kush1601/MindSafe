@@ -1,0 +1,120 @@
+
+/* Outer section */
+.ext-section {
+  padding: 60px 20px;
+  background: radial-gradient(circle at top left, #f2f7ff 0, #f2f7ff 0, #f2f7ff 0);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Page title */
+.ext-body h1 {
+  margin-top: 40px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* Two-column layout */
+.ext-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  margin-top: 24px;
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* LEFT 50% */
+.ext-left {
+  width: 50%;
+}
+
+.ext-desc {
+  font-size: 22px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.ext-subtitle {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.ext-features {
+  list-style: disc;
+  padding-left: 2px;
+  font-size: 22px;
+  line-height: 1.6;
+}
+
+/* RIGHT 50% */
+.ext-right {
+  width: 50%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.ext-right h3 {
+  font-size: 22px;
+}
+
+.ext-right-text {
+  font-size: 22px;
+  line-height: 1.6;
+}
+
+/* Download button */
+.ext-download-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 22px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  width: fit-content;
+  transition: background 0.15s ease, transform 0.1s ease,
+    box-shadow 0.15s ease;
+}
+
+.ext-download-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+}
+
+/* Meta info under button */
+.ext-meta {
+  font-size: 22px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+/* Responsive: stack columns on small screens */
+@media (max-width: 768px) {
+  .ext-inner {
+    flex-direction: column;
+  }
+
+  .ext-left,
+  .ext-right {
+    width: 100%;
+  }
+
+  .ext-right {
+    margin-top: 16px;
+  }
+
+  .ext-body h1 {
+    font-size: 26px;
+    margin-top: 24px;
+  }
+}

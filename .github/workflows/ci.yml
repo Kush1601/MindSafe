@@ -1,0 +1,56 @@
+name: MindSafe CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-agents
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: ai-agents/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          # Install a lightweight subset (no torch/whisper/opencv) for CI.
+          # Heavy ML deps are only needed for full pipeline integration tests.
+          pip install fastapi "uvicorn[standard]" python-dotenv anthropic structlog \
+                      "fhir.resources>=8.0.0" pydantic jsonschema \
+                      pytest ruff
+
+      - name: Lint with ruff
+        run: |
+          ruff check evaluation/guardrails.py \
+                       evaluation/deid.py \
+                       evaluation/fhir_export.py \
+                       evaluation/evals/metrics.py \
+                       evaluation/evals/run_evals.py \
+                       tests/
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Eval regression gate (requires ANTHROPIC_API_KEY)
+        # Only runs when the secret is available (skip on forks / non-main PRs)
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: "claude-haiku-4-5-20251001"
+        run: |
+          python -m evaluation.evals.run_evals \
+            --fail-below 0.70 \
+            --out-dir evaluation/evals

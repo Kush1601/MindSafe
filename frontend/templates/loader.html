@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loading…</title>
+
+    <!-- Proper way to load CSS from /static -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/loader.css') }}">
+</head>
+<body>
+    <!-- Loader overlay -->
+    <div id="loading-overlay">
+        <div class="loader"></div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+          const overlay = document.getElementById('loading-overlay');
+          overlay.style.display = 'flex';   // show loader
+
+          // After 5 seconds go to /data
+          setTimeout(function () {
+              window.location.href = "{{ url_for('data') }}";
+          }, 5000);
+      });
+    </script>
+</body>
+</html>

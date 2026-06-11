@@ -1,0 +1,55 @@
+{
+  "family": "mindsafe-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "mindsafe-api",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/mindsafe-api:latest",
+      "portMappings": [
+        {
+          "containerPort": 5001,
+          "hostPort": 5001,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "OTEL_SERVICE_NAME", "value": "mindsafe-api" }
+      ],
+      "secrets": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:mindsafe/anthropic-api-key"
+        },
+        {
+          "name": "SUPABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:mindsafe/supabase-url"
+        },
+        {
+          "name": "SUPABASE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:mindsafe/supabase-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mindsafe-api",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

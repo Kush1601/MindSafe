@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 50%, #0ea5e9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        /* Back to Home button */
+        .back-button {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(15, 23, 42, 0.6);
+            color: #e5e7eb;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .back-button::before {
+            content: "← ";
+        }
+
+        .back-button:hover {
+            background: rgba(15, 23, 42, 0.85);
+            transform: translateY(-1px);
+            box-shadow: 0 16px 35px rgba(15, 23, 42, 0.9);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 2px;
+            max-width: 400px;
+            width: 100%;
+            transform: translateX(-140px);
+            /* ⬅️ push circles a bit to the left */
+        }
+
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .metric-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .metric-card:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .metric-card:nth-child(4) {
+            animation-delay: 0.6s;
+        }
+
+        .metric-card:nth-child(5) {
+            animation-delay: 0.8s;
+        }
+
+        .metric-card:nth-child(6) {
+            animation-delay: 1s;
+        }
+
+        .metric-card:nth-child(7) {
+            animation-delay: 1.2s;
+        }
+
+        .metric-card:nth-child(8) {
+            animation-delay: 1.4s;
+        }
+
+        .metric-card:nth-child(9) {
+            animation-delay: 1.6s;
+        }
+
+        .metric-card:nth-child(10) {
+            animation-delay: 1.8s;
+        }
+
+        .top-left {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .top-mid-left {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .top-mid-right {
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        .top-right {
+            grid-column: 4;
+            grid-row: 1;
+        }
+
+        .large-left {
+            grid-column: 2;
+            grid-row: 2 / 4;
+            z-index: 2;
+            margin-right: -50px;
+        }
+
+        .large-right {
+            grid-column: 3;
+            grid-row: 2 / 4;
+            z-index: 1;
+            margin-left: -50px;
+        }
+
+        .mid-left-top {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .mid-left-bottom {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .mid-right-top {
+            grid-column: 4;
+            grid-row: 2;
+        }
+
+        .mid-right-bottom {
+            grid-column: 4;
+            grid-row: 3;
+        }
+
+        .bottom-left {
+            grid-column: 1;
+            grid-row: 4;
+        }
+
+        .bottom-mid-left {
+            grid-column: 2;
+            grid-row: 4;
+        }
+
+        .bottom-mid-right {
+            grid-column: 3;
+            grid-row: 4;
+        }
+
+        .bottom-right {
+            grid-column: 4;
+            grid-row: 4;
+        }
+
+        .circle-wrapper {
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .glow-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            filter: blur(25px);
+            opacity: 0.6;
+            z-index: 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+        }
+
+        svg {
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .metric-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            z-index: 2;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .large-value {
+            font-size: 48px;
+        }
+
+        .small-text {
+            font-size: 16px;
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        .metric-label {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .emoji-ring {
+            display: none;
+        }
+
+        .multicolor {
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+
+        .large-circle-bg {
+            stroke-width: 16;
+        }
+
+        .large-circle-progress {
+            stroke-width: 16;
+        }
+
+        .thick-circle {
+            stroke-width: 14;
+        }
+
+        .medium-circle {
+            stroke-width: 12;
+        }
+
+        .thin-circle {
+            stroke-width: 10;
+        }
+
+        .dots-circle {
+            stroke-dasharray: 3 12;
+            stroke-linecap: round;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Back to home (Flask index route) -->
+    <a href="{{ url_for('index') }}" class="back-button">Back to Home</a>
+
+    <div class="dashboard">
+        <div class="metric-card top-left"></div>
+
+        <div class="metric-card top-mid-left" id="card-pacing">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">⚡</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">🚀</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">⏱️</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">📊</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 100px; height: 100px; background: linear-gradient(135deg, #ff6b9d, #c06bff);"></div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg thick-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress thick-circle" cx="70" cy="70" r="60" stroke="url(#grad1)"
+                        stroke-dasharray="377" stroke-dashoffset="377" data-metric="pacing"></circle>
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b9d" />
+                            <stop offset="50%" style="stop-color:#ff8a5c" />
+                            <stop offset="100%" style="stop-color:#c06bff" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="pacing">66.7%</div>
+            </div>
+            <div class="metric-label">Pacing</div>
+        </div>
+
+        <div class="metric-card top-mid-right" id="card-story">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">📖</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">✨</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">🎭</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">💫</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 100px; height: 100px; background: radial-gradient(circle, rgba(255,107,157,0.6) 0%, rgba(91,207,255,0.6) 50%, rgba(123,255,157,0.6) 100%);">
+                </div>
+                <svg width="140" height="140">
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#ff5c8a"
+                        stroke-dasharray="31.4 345.6"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#ff7a5c"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-31.4"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#5c8aff"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-62.8"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#7a5cff"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-94.2"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#d75cff"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-125.6"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#ff5cd7"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-157"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#5cffbd"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-188.4"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#5cff8a"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-219.8"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#d7ff5c"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-251.2"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#ffbd5c"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-306"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#c8b3ff"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-340"></circle>
+                    <circle class="multicolor medium-circle" cx="70" cy="70" r="60" fill="none" stroke="#5cbaff"
+                        stroke-dasharray="31.4 345.6" stroke-dashoffset="-374"></circle>
+                </svg>
+                <div class="metric-value" data-value="story">100.0%</div>
+            </div>
+            <div class="metric-label">Story</div>
+        </div>
+
+        <div class="metric-card top-right"></div>
+
+        <div class="metric-card mid-left-top" id="card-language">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">💬</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">🗣️</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">📝</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">✍️</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 100px; height: 100px; background: linear-gradient(135deg, #ff8a5c, #ff6b9d);"></div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg medium-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress medium-circle" cx="70" cy="70" r="60" stroke="url(#grad2)"
+                        stroke-dasharray="377" stroke-dashoffset="377" data-metric="language"></circle>
+                    <defs>
+                        <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff8a5c" />
+                            <stop offset="50%" style="stop-color:#ffa05c" />
+                            <stop offset="100%" style="stop-color:#ff6b9d" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="language">35.8%</div>
+            </div>
+            <div class="metric-label">Language</div>
+        </div>
+
+        <div class="metric-card large-left" id="card-overall">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji"
+                        style="top: 5%; left: 50%; transform: translate(-50%, -100%); font-size: 20px;">🏆</span>
+                    <span class="emoji"
+                        style="top: 50%; right: 5%; transform: translate(100%, -50%); font-size: 20px;">⭐</span>
+                    <span class="emoji"
+                        style="bottom: 5%; left: 50%; transform: translate(-50%, 100%); font-size: 20px;">🎯</span>
+                    <span class="emoji"
+                        style="top: 50%; left: 5%; transform: translate(-100%, -50%); font-size: 20px;">💎</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 180px; height: 180px; background: radial-gradient(circle, rgba(192,107,255,0.7) 0%, rgba(92,159,255,0.5) 50%, rgba(92,255,189,0.4) 100%);">
+                </div>
+                <svg width="240" height="240">
+                    <circle class="circle-bg large-circle-bg" cx="120" cy="120" r="100"></circle>
+                    <circle class="circle-progress large-circle-progress" cx="120" cy="120" r="100" stroke="url(#grad5)"
+                        stroke-dasharray="628.3" stroke-dashoffset="628.3" data-metric="overall"></circle>
+                    <defs>
+                        <linearGradient id="grad5" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#c06bff" />
+                            <stop offset="25%" style="stop-color:#8c6bff" />
+                            <stop offset="50%" style="stop-color:#5c9fff" />
+                            <stop offset="75%" style="stop-color:#5cbfff" />
+                            <stop offset="100%" style="stop-color:#5cffbd" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value large-value" data-value="overall">6<span class="small-text">/10</span></div>
+            </div>
+            <div class="metric-label" style="font-size: 16px;">Overall Score</div>
+        </div>
+
+        <div class="metric-card large-right" id="card-brainrot">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji"
+                        style="top: 5%; left: 50%; transform: translate(-50%, -100%); font-size: 20px;">🧠</span>
+                    <span class="emoji"
+                        style="top: 50%; right: 5%; transform: translate(100%, -50%); font-size: 20px;">🔥</span>
+                    <span class="emoji"
+                        style="bottom: 5%; left: 50%; transform: translate(-50%, 100%); font-size: 20px;">💭</span>
+                    <span class="emoji"
+                        style="top: 50%; left: 5%; transform: translate(-100%, -50%); font-size: 20px;">🌀</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 180px; height: 180px; background: radial-gradient(circle, rgba(255,107,157,0.7) 0%, rgba(255,138,92,0.5) 50%, rgba(92,186,255,0.4) 100%);">
+                </div>
+                <svg width="240" height="240">
+                    <circle class="circle-bg large-circle-bg" cx="120" cy="120" r="100"></circle>
+                    <circle class="circle-progress large-circle-progress" cx="120" cy="120" r="100" stroke="url(#grad6)"
+                        stroke-dasharray="628.3" stroke-dashoffset="628.3" data-metric="brainrot"></circle>
+                    <defs>
+                        <linearGradient id="grad6" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b9d" />
+                            <stop offset="33%" style="stop-color:#ff8a5c" />
+                            <stop offset="66%" style="stop-color:#ffa05c" />
+                            <stop offset="100%" style="stop-color:#5cbaff" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value large-value" data-value="brainrot">35.8<span class="small-text">/100</span>
+                </div>
+            </div>
+            <div class="metric-label" style="font-size: 16px;">Brainrot Index</div>
+        </div>
+
+        <div class="metric-card mid-right-top" id="card-fantasy">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">🦄</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">🌟</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">🎪</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">🎨</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 100px; height: 100px; background: linear-gradient(135deg, #ffd45c, #ffbd5c);"></div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg thick-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress dots-circle thick-circle" cx="70" cy="70" r="60"
+                        stroke="url(#grad_fantasy)" stroke-dasharray="3 12" stroke-dashoffset="377"
+                        data-metric="fantasy"></circle>
+                    <defs>
+                        <linearGradient id="grad_fantasy" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ffd45c" />
+                            <stop offset="50%" style="stop-color:#ffbd5c" />
+                            <stop offset="100%" style="stop-color:#ff9a5c" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="fantasy">50.0%</div>
+            </div>
+            <div class="metric-label">Fantasy</div>
+        </div>
+
+        <div class="metric-card mid-left-bottom" id="card-interactivity">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">🎮</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">🎯</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">🕹️</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">👆</span>
+                </div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg thin-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress thin-circle" cx="70" cy="70" r="60" stroke="url(#grad_inter)"
+                        stroke-dasharray="377" stroke-dashoffset="377" data-metric="interactivity"></circle>
+                    <defs>
+                        <linearGradient id="grad_inter" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#5c9fff" />
+                            <stop offset="100%" style="stop-color:#c06bff" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="interactivity">89.0%</div>
+            </div>
+            <div class="metric-label">Interactivity</div>
+        </div>
+
+        <div class="metric-card mid-right-bottom" id="card-sel">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">❤️</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">🤝</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">😊</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">🌱</span>
+                </div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg thin-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress thin-circle" cx="70" cy="70" r="60" stroke="url(#grad_sel)"
+                        stroke-dasharray="377" stroke-dashoffset="377" data-metric="sel"></circle>
+                    <defs>
+                        <linearGradient id="grad_sel" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b9d" />
+                            <stop offset="100%" style="stop-color:#ffd45c" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="sel">N/A</div>
+            </div>
+            <div class="metric-label">SEL</div>
+        </div>
+
+        <div class="metric-card bottom-left"></div>
+
+        <div class="metric-card bottom-mid-left" id="card-engagement">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">👥</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">💪</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">🎉</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">🚀</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 100px; height: 100px; background: linear-gradient(135deg, #5cffbd, #5cbaff);"></div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg medium-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress medium-circle" cx="70" cy="70" r="60" stroke="url(#grad3)"
+                        stroke-dasharray="377" stroke-dashoffset="377" data-metric="engagement"></circle>
+                    <defs>
+                        <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#5cffbd" />
+                            <stop offset="50%" style="stop-color:#5cdaff" />
+                            <stop offset="100%" style="stop-color:#5cbaff" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="engagement">41%</div>
+            </div>
+            <div class="metric-label">Engagement</div>
+        </div>
+
+        <div class="metric-card bottom-mid-right" id="card-quality">
+            <div class="circle-wrapper">
+                <div class="emoji-ring">
+                    <span class="emoji" style="top: 0%; left: 50%; transform: translate(-50%, -100%);">✨</span>
+                    <span class="emoji" style="top: 50%; right: 0%; transform: translate(100%, -50%);">🌟</span>
+                    <span class="emoji" style="bottom: 0%; left: 50%; transform: translate(-50%, 100%);">💫</span>
+                    <span class="emoji" style="top: 50%; left: 0%; transform: translate(-100%, -50%);">⭐</span>
+                </div>
+                <div class="glow-effect"
+                    style="width: 100px; height: 100px; background: linear-gradient(135deg, #bd5cff, #7c5cff);"></div>
+                <svg width="140" height="140">
+                    <circle class="circle-bg thick-circle" cx="70" cy="70" r="60"></circle>
+                    <circle class="circle-progress thick-circle" cx="70" cy="70" r="60" stroke="url(#grad4)"
+                        stroke-dasharray="377" stroke-dashoffset="377" data-metric="quality"></circle>
+                    <defs>
+                        <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#bd5cff" />
+                            <stop offset="50%" style="stop-color:#9c5cff" />
+                            <stop offset="100%" style="stop-color:#7c5cff" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="metric-value" data-value="quality">69%</div>
+            </div>
+            <div class="metric-label">Quality</div>
+        </div>
+
+        <div class="metric-card bottom-right"></div>
+    </div>
+
+    <script>
+        // Function to update a metric circle
+        function updateMetric(metricName, value) {
+            const circle = document.querySelector(`[data-metric="${metricName}"]`);
+            const valueDisplay = document.querySelector(`[data-value="${metricName}"]`);
+
+            if (!circle || !valueDisplay) return;
+
+            const circumference = parseFloat(circle.getAttribute('stroke-dasharray'));
+            const offset = circumference - (value / 100) * circumference;
+
+            circle.style.strokeDashoffset = offset;
+        }
+    </script>
+</body>
+
+</html>

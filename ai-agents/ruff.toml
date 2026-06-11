@@ -1,0 +1,12 @@
+target-version = "py311"
+line-length = 100
+extend-exclude = ["venv", "__pycache__", "outputs"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = [
+    "E501",
+    "F401",
+    "UP035",  # Dict/List/Tuple from typing — not unsafe, just verbose to fix
+    "F841",   # unused variable cat_to_idx in kappa impl
+]

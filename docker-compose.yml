@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+
+  api:
+    build:
+      context: ./ai-agents
+      dockerfile: Dockerfile
+      args:
+        INSTALL_ML_DEPS: "1"
+    image: mindsafe-api
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./ai-agents/.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+      OTEL_SERVICE_NAME: "mindsafe-api"
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: mindsafe-frontend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./ai-agents/.env
+    environment:
+      MINDSAFE_API_URL: "http://api:5001"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC receiver
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    restart: unless-stopped

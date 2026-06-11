@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "MindSafe",
+  "version": "1.0.0",
+  "description": "Tracks last clicked YouTube / YouTube Kids video and shows a 1–10 score.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://youtu.be/*",
+    "https://www.youtubekids.com/*",
+    "https://kids.youtube.com/*",
+    "http://localhost:5001/*",
+    "https://*.amazonaws.com/*",
+    "https://*.elb.amazonaws.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "MindSafe",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://youtu.be/*",
+        "https://www.youtubekids.com/*",
+        "https://kids.youtube.com/*"
+      ],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

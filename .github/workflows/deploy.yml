@@ -1,0 +1,106 @@
+name: MindSafe Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-api:
+    name: Build & deploy API to ECS
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, push API image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --build-arg INSTALL_ML_DEPS=1 \
+            -t $ECR_REGISTRY/mindsafe-api:$IMAGE_TAG \
+            -t $ECR_REGISTRY/mindsafe-api:latest \
+            -f ai-agents/Dockerfile \
+            ai-agents/
+          docker push $ECR_REGISTRY/mindsafe-api:$IMAGE_TAG
+          docker push $ECR_REGISTRY/mindsafe-api:latest
+
+      - name: Render ECS task definition with new image
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs-task-definition.json
+          container-name: mindsafe-api
+          image: ${{ steps.ecr-login.outputs.registry }}/mindsafe-api:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: mindsafe-api
+          cluster: mindsafe
+          wait-for-service-stability: true
+
+  deploy-frontend:
+    name: Build & deploy frontend to ECS
+    runs-on: ubuntu-latest
+    needs: deploy-api
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, push frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/mindsafe-frontend:$IMAGE_TAG \
+            -t $ECR_REGISTRY/mindsafe-frontend:latest \
+            -f frontend/Dockerfile \
+            frontend/
+          docker push $ECR_REGISTRY/mindsafe-frontend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/mindsafe-frontend:latest
+
+      - name: Render ECS task definition with new image
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs-task-definition-frontend.json
+          container-name: mindsafe-frontend
+          image: ${{ steps.ecr-login.outputs.registry }}/mindsafe-frontend:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: mindsafe-frontend
+          cluster: mindsafe
+          wait-for-service-stability: true

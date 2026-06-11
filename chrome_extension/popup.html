@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>MindSafe – Video Score</title>
+    <style>
+      body {
+        width: 360px;
+        margin: 0;
+        padding: 16px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        font-size: 13px;
+        background: radial-gradient(
+          circle at top left,
+          #dcfce7 0,
+          #eff6ff 40%,
+          #e0f2fe 100%
+        );
+        color: #0f172a;
+      }
+      .card {
+        background: radial-gradient(circle at top left, #ffffff, #f9fafb);
+        border-radius: 20px;
+        padding: 18px 20px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.26);
+        border: 1px solid rgba(52, 211, 153, 0.9);
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: 20px;
+        background: radial-gradient(
+          circle at top right,
+          rgba(45, 212, 191, 0.35),
+          rgba(59, 130, 246, 0.25)
+        );
+        mix-blend-mode: screen;
+        opacity: 0.55;
+      }
+      .card > * {
+        position: relative;
+        z-index: 1;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .card-title-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #22c55e, #0ea5e9);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #f9fafb;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .status-pill {
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(240, 253, 250, 0.9);
+        color: #047857;
+        border: 1px solid rgba(16, 185, 129, 0.7);
+        white-space: nowrap;
+        box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.8);
+      }
+      #result {
+        margin-top: 4px;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .score {
+        font-size: 22px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 64px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        background: radial-gradient(circle at 30% 0, #f0f9ff, #ffffff);
+        color: #111827;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+        transition: transform 0.15s ease, box-shadow 0.15s ease,
+          background 0.15s ease;
+      }
+      .score-good {
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #f9fafb;
+      }
+      .score-ok {
+        background: linear-gradient(135deg, #fb923c, #facc15);
+        color: #111827;
+      }
+      .score-warn {
+        background: linear-gradient(135deg, #f97373, #ef4444);
+        color: #f9fafb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-title-icon">MS</span>
+          <span>MindSafe Kids Shield</span>
+        </div>
+        <span class="status-pill" id="status-pill">Loading…</span>
+      </div>
+      <div id="result">Loading…</div>
+      <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+        <label style="font-size: 12px; color: #065f46; white-space: nowrap;" for="age-input">Child's age:</label>
+        <input id="age-input" type="number" min="0" max="18" step="0.5" value="4"
+          style="width: 60px; padding: 3px 6px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.5);
+                 font-size: 12px; background: rgba(255,255,255,0.8); color: #0f172a;" />
+        <button id="age-save" style="font-size: 11px; padding: 3px 10px; border-radius: 8px;
+          background: linear-gradient(135deg,#22c55e,#0ea5e9); color: #fff; border: none; cursor: pointer;">
+          Save
+        </button>
+        <span id="age-saved" style="font-size: 11px; color: #047857; display:none;">✓</span>
+      </div>
+      <div
+        style="margin-top: 6px; font-size: 11px; color: #065f46; opacity: 0.9"
+      >
+        Helping parents spot videos that may feel too intense or overstimulating
+        for young minds.
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

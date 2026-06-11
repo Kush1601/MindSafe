@@ -1,0 +1,130 @@
+# ==========================
+# Global OS / Editor Stuff
+# ==========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.log
+
+# VSCode settings (optional to ignore)
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+
+# ==========================
+# Python / Flask (backend + ai-agents)
+# ==========================
+# Virtual environments
+venv/
+env/
+ENV/
+*/venv/
+*/env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+.eggs/
+
+# Env files
+.env
+.env.*
+*.env
+*.env.local
+*.secret
+
+# Local Flask instance / cache
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Model caches (if any)
+models/
+*.pt
+*.bin
+
+# ==========================
+# Node / Frontend (React, Vite, etc.)
+# ==========================
+node_modules/
+dist/
+build/
+.cache/
+.npm/
+.yarn/
+.pnp/
+.pnp.js
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+frontend/.env
+frontend/.env.local
+
+# ==========================
+# Chrome Extension
+# ==========================
+chrome-extension/node_modules/
+chrome-extension/dist/
+chrome-extension/build/
+
+# API keys in extension
+chrome-extension/*.env
+chrome-extension/secret.json
+
+# ==========================
+# AI / Temporary Files
+# ==========================
+ai-agents/.cache/
+ai-agents/.temp/
+ai-agents/output/
+ai-agents/outputs/
+ai-agents/tmp/
+
+# ==========================
+# General Build Output
+# ==========================
+*.out
+*.exe
+*.dll
+*.o
+*.a
+
+# ==========================
+# IDE metadata
+# ==========================
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# ==========================
+# Python Jupyter (if added later)
+# ==========================
+.ipynb_checkpoints/
+
+# ==========================
+# MacOS + Windows extras
+# ==========================
+.DS_Store
+ehthumbs.db
+desktop.ini
+
+# ==========================
+# Packaging
+# ==========================
+*.zip
+*.tar
+*.tar.gz
+

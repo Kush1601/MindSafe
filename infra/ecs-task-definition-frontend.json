@@ -1,0 +1,46 @@
+{
+  "family": "mindsafe-frontend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "mindsafe-frontend",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/mindsafe-frontend:latest",
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "hostPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "MINDSAFE_API_URL",
+          "value": "http://mindsafe-api-internal.REGION.elb.amazonaws.com:5001"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SUPABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:mindsafe/supabase-url"
+        },
+        {
+          "name": "SUPABASE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:mindsafe/supabase-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mindsafe-frontend",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSafe Form</title>
+
+    <!-- Load Tailwind CSS (External Dependency) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Link to Form CSS file -->
+    <link rel="stylesheet" href="../static/css/form.css">
+</head>
+
+<body class="bg-blue-50 font-sans text-gray-800">
+
+    <div class="relative flex items-center justify-center min-h-screen py-12 px-4 overflow-hidden ">
+
+        <!-- --- Back Button --- -->
+        <a href="{{ url_for('index') }}"
+            class="absolute top-6 left-6 z-30 inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full shadow-md text-sm font-medium text-gray-700 hover:bg-white transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd"
+                    d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+            </svg>
+            Back
+        </a>
+
+        <!-- --- Decorative SVGs --- -->
+
+        <!-- Kid on swing (Top-Left) -->
+        <div class="hidden md:block absolute z-10 top-[4.55%] left-1/4 w-32 h-32 swing-anim"
+            style="animation-delay: 0.5s;">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <line x1="30" y1="0" x2="30" y2="40" stroke="#a0aec0" stroke-width="2" />
+                <line x1="70" y1="0" x2="70" y2="40" stroke="#a0aec0" stroke-width="2" />
+                <rect x="20" y="40" width="60" height="10" rx="3" fill="#e53e3e" />
+                <circle cx="50" cy="60" r="10" fill="#f6e05e" />
+                <rect x="45" y="70" width="10" height="20" fill="#4299e1" />
+            </svg>
+        </div>
+
+        <!-- Kid with blocks (Bottom-Right) -->
+        <div class="hidden md:block absolute z-10 bottom-[4.55%] right-1/4 w-40 h-40 float-anim">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="30" r="10" fill="#f6e05e" />
+                <rect x="45" y="40" width="10" height="20" fill="#4299e1" />
+                <rect x="35" y="60" width="30" height="15" fill="#48bb78" />
+                <rect x="25" y="75" width="20" height="20" fill="#e53e3e" />
+                <rect x="55" y="75" width="20" height="20" fill="#4299e1" />
+            </svg>
+        </div>
+
+        <!-- Balloons (Top-Right) -->
+        <div class="hidden md:block absolute z-10 top-20 right-1/4 w-24 h-32 float-anim-delay">
+            <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="40" cy="30" rx="20" ry="28" fill="#e53e3e" />
+                <ellipse cx="65" cy="40" rx="18" ry="25" fill="#4299e1" />
+                <path d="M40 58 Q 45 80 50 110" stroke="#a0aec0" stroke-width="1" fill="none" />
+                <path d="M65 65 Q 60 85 50 110" stroke="#a0aec0" stroke-width="1" fill="none" />
+            </svg>
+        </div>
+
+        <!-- Cute Teddy Bear (Bottom-Left) -->
+        <img src="../static/img/teddy.png" alt="Cute Teddy Bear"
+            class="hidden md:block absolute z-90 bottom-20 left-20 w-[38rem] h-[32rem] -translate-x-1/3 translate-y-1/4">
+        <!-- Balloons (Top-Right) -->
+        <div class="hidden md:block absolute z-10 top-20 right-1/4 w-24 h-32 float-anim-delay">
+            <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="40" cy="30" rx="20" ry="28" fill="#e53e3e" />
+                <ellipse cx="65" cy="40" rx="18" ry="25" fill="#4299e1" />
+                <path d="M40 58 Q 45 80 50 110" stroke="#a0aec0" stroke-width="1" fill="none" />
+                <path d="M65 65 Q 60 85 50 110" stroke="#a0aec0" stroke-width="1" fill="none" />
+            </svg>
+        </div>
+
+        <!-- --- Form Container --- -->
+        <div
+            class="relative z-20 w-full max-w-xl min-h-[500px] p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100">
+
+            <h1 class="text-4xl font-bold text-center text-gray-900 mb-2">MindSafe: Check it out!</h1>
+            <br/>
+
+            <form id="summarize-form" action="{{ url_for('loader') }}" method="get" novalidate>
+                <div class="space-y-4">
+                    <!-- URL Field -->
+                    <div>
+                        <label for="url-input" class="justify-center text-sm font-medium text-gray-700">Quickly analyze YouTube Kids videos for safety and suitability.</label>
+                        <br />
+                        <br />
+
+                        <div class="flex flex-col items-center">
+                            <img src="../static/img/youtube-kids.png" alt="Demo video preview"
+                                class="mx-auto w-9/12 h-20rem" />
+                            <br />
+                            <label for="url-input" class="mt-1 text-center text-lg font-medium text-gray-900">
+                                YouTube Link 🔗
+                            </label>
+                        </div>
+
+                        <br />
+                        <input type="url" id="url-input" name="url" required placeholder="https://www.example.com"
+                            class="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg" required>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button type="submit" id="submit-button"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105 opacity-100 disabled:cursor-not-allowed %">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- --- Results Area --- -->
+            <div id="result-container" class="mt-6 hidden">
+                <!-- Loader -->
+                <div id="loader" class="loader hidden"></div>
+
+                <!-- Error Message -->
+                <div id="error-message" class="p-3 rounded-md text-center mb-4 text-sm bg-red-100 text-red-700 hidden">
+                </div>
+
+                <!-- Summary Output -->
+                <!-- <div id="summary-output" class="p-4 bg-gray-50 rounded-lg border border-gray-200"> -->
+                    <!-- Content will be injected here -->
+                <!-- </div> -->
+
+                <!-- Sources Output -->
+                <!-- <div id="sources-container" class="mt-4">
+                    <h3 class="text-sm font-medium text-gray-600">Sources used for this summary:</h3>
+                    <ul id="sources-list" class="list-disc list-inside text-sm text-gray-500">
+                        <!-- Sources will be injected here -->
+                    </ul>
+                <!-- </div> -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JS file -->
+    <script src="../static/js/form.js" defer></script>
+</body>
+
+</html>
