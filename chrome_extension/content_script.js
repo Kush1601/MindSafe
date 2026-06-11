@@ -47,32 +47,25 @@ async function playerRequest(videoId, client) {
 }
 
 async function getCaptionTracks(videoId) {
-  // 1) WEB client
+  // 1) Scrape the watch page HTML for the caption track JSON.
+  // This is the most reliable method — the page itself embeds captionTracks,
+  // and YouTube now rejects hand-rolled innertube/player API calls.
+  try {
+    const html = await (await fetch(location.href, { credentials: "include" })).text();
+    const m = html.match(/"captionTracks":(\[.*?\])/);
+    if (m) {
+      const tracks = JSON.parse(m[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"'));
+      if (tracks.length) return tracks;
+    }
+  } catch (e) { console.warn("[MindSafe] HTML scrape failed:", e); }
+
+  // 2) Fallback: innertube WEB client (works for some videos)
   try {
     const t = extractTracks(await playerRequest(videoId, {
       clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en",
     }));
     if (t) return t;
   } catch (e) { console.warn("[MindSafe] WEB player failed:", e); }
-
-  // 2) ANDROID client — returns captions more reliably for some videos
-  try {
-    const t = extractTracks(await playerRequest(videoId, {
-      clientName: "ANDROID", clientVersion: "19.09.37",
-      androidSdkVersion: 30, hl: "en",
-    }));
-    if (t) return t;
-  } catch (e) { console.warn("[MindSafe] ANDROID player failed:", e); }
-
-  // 3) Last resort: scrape the watch page HTML for the caption track JSON
-  try {
-    const html = await (await fetch(location.href, { credentials: "include" })).text();
-    const m = html.match(/"captionTracks":(\[.*?\])/);
-    if (m) {
-      const tracks = JSON.parse(m[1].replace(/\\u0026/g, "&"));
-      if (tracks.length) return tracks;
-    }
-  } catch (e) { console.warn("[MindSafe] HTML scrape failed:", e); }
 
   return null;
 }
