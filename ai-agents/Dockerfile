@@ -16,7 +16,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
         "fhir.resources>=8.0.0" pydantic jsonschema httpx requests \
         supabase opentelemetry-sdk opentelemetry-api \
         opentelemetry-instrumentation-fastapi \
-        opentelemetry-exporter-otlp-proto-grpc
+        opentelemetry-exporter-otlp-proto-grpc \
+        yt-dlp "numpy<2"
 
 # Heavy ML deps (torch/whisper/cv2/librosa) — skip in CI, install for full pipeline
 # Set INSTALL_ML_DEPS=1 to include them
