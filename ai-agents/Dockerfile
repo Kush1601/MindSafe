@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
         supabase opentelemetry-sdk opentelemetry-api \
         opentelemetry-instrumentation-fastapi \
         opentelemetry-exporter-otlp-proto-grpc \
-        yt-dlp "numpy<2"
+        yt-dlp "numpy<2" yt-dlp-get-pot bgutil-ytdlp-pot-provider
 
 # Heavy ML deps (torch/whisper/cv2/librosa) — skip in CI, install for full pipeline
 # Set INSTALL_ML_DEPS=1 to include them

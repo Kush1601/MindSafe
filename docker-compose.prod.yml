@@ -4,6 +4,10 @@
 
 services:
 
+  bgutil:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    restart: unless-stopped
+
   api:
     build:
       context: ./ai-agents

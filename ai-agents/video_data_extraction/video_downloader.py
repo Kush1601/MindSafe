@@ -2,8 +2,11 @@
 YouTube video downloading functionality using yt-dlp.
 """
 
+import os
 from pathlib import Path
 from yt_dlp import YoutubeDL
+
+_COOKIES_FILE = Path(__file__).parent.parent / "yt-cookies.txt"
 
 
 def download_youtube_video(url: str, out_dir: Path) -> Path:
@@ -27,10 +30,10 @@ def download_youtube_video(url: str, out_dir: Path) -> Path:
         "merge_output_format": "mp4",
         "quiet": True,
         "noprogress": True,
-        # Use browser cookies to bypass bot detection (optional)
-        # "cookiesfrombrowser": ("chrome",),  # Change to "firefox" or "safari" if Chrome doesn't work
-        # Avoid JS runtime deprecation warning by forcing a simple player client
-        "extractor_args": {"youtube": {"player_client": ["default"]}},
+        # Use cookies file if present (needed on server to bypass bot detection)
+        **({"cookiefile": str(_COOKIES_FILE)} if _COOKIES_FILE.exists() else {}),
+        # PO token provider sidecar (bypasses bot detection on server IPs)
+        "extractor_args": {"youtube": {"player_client": ["web"], "po_token": ["web+https://bgutil:4416/token"]}},
     }
 
     before_files = set(out_dir.glob("*"))
