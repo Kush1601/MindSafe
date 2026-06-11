@@ -92,6 +92,14 @@ app = FastAPI(
     version="2.0.0",
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 if _otel_fastapi_available:
     FastAPIInstrumentor.instrument_app(app)
 
