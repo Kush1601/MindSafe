@@ -90,27 +90,40 @@ async function fetchTranscriptSegments() {
       tracks.find((t) => (t.languageCode || "").startsWith("en")) ||
       tracks[0];
 
-    const resp = await fetch(track.baseUrl, { credentials: "include" });
-    if (!resp.ok) throw new Error(`caption fetch ${resp.status}`);
-    const xml = await resp.text();
+    const decoder = document.createElement("textarea");
+    const decode = (s) => { decoder.innerHTML = s || ""; return decoder.value.replace(/\s+/g, " ").trim(); };
 
-    const doc = new DOMParser().parseFromString(xml, "text/xml");
-    const nodes = Array.from(doc.getElementsByTagName("text"));
-    if (nodes.length === 0) {
-      console.warn("[MindSafe] caption track empty");
-      return null;
+    // Try the default format first, then srv3 (asr tracks often need fmt=srv3).
+    for (const url of [track.baseUrl, track.baseUrl + "&fmt=srv3"]) {
+      const resp = await fetch(url, { credentials: "include" });
+      if (!resp.ok) continue;
+      const xml = await resp.text();
+      const doc = new DOMParser().parseFromString(xml, "text/xml");
+
+      // Legacy format: <text start="s" dur="s">
+      let segments = Array.from(doc.getElementsByTagName("text")).map((n) => {
+        const start = parseFloat(n.getAttribute("start") || "0");
+        const dur = parseFloat(n.getAttribute("dur") || "0");
+        return { start, end: start + dur, text: decode(n.textContent) };
+      }).filter((s) => s.text.length > 0);
+
+      // srv3 format: <p t="ms" d="ms"> with <s> word children
+      if (segments.length === 0) {
+        segments = Array.from(doc.getElementsByTagName("p")).map((p) => {
+          const start = parseFloat(p.getAttribute("t") || "0") / 1000;
+          const dur = parseFloat(p.getAttribute("d") || "0") / 1000;
+          return { start, end: start + dur, text: decode(p.textContent) };
+        }).filter((s) => s.text.length > 0);
+      }
+
+      if (segments.length > 0) {
+        console.log(`[MindSafe] fetched ${segments.length} caption segments`);
+        return segments;
+      }
     }
 
-    const decoder = document.createElement("textarea");
-    const segments = nodes.map((n) => {
-      const start = parseFloat(n.getAttribute("start") || "0");
-      const dur = parseFloat(n.getAttribute("dur") || "0");
-      decoder.innerHTML = n.textContent || "";
-      return { start, end: start + dur, text: decoder.value.replace(/\n/g, " ").trim() };
-    }).filter((s) => s.text.length > 0);
-
-    console.log(`[MindSafe] fetched ${segments.length} caption segments`);
-    return segments.length > 0 ? segments : null;
+    console.warn("[MindSafe] caption track empty");
+    return null;
   } catch (err) {
     console.warn("[MindSafe] caption fetch failed:", err);
     return null;
