@@ -2,104 +2,105 @@
 //
 // Shows the latest MindSafe evaluation for the last analyzed video.
 
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function tierColor(score) {
+  if (typeof score !== "number" || Number.isNaN(score)) return "var(--muted)";
+  if (score >= 8) return "var(--safe)";
+  if (score >= 5) return "var(--caution)";
+  return "var(--concern)";
+}
+
 function renderResult(r) {
   const resultDiv = document.getElementById("result");
-  const statusPill = document.getElementById("status-pill");
+
   if (!r) {
-    if (statusPill) statusPill.textContent = "Idle";
-    resultDiv.innerText =
-      "No video analyzed yet. Open a YouTube / YouTube Kids video, wait for MindSafe to finish, then reopen this popup.";
+    resultDiv.innerHTML = `
+      <div class="empty">
+        No video analyzed yet. Open a YouTube or YouTube Kids video and MindSafe
+        will score it automatically — then reopen this popup.
+      </div>`;
     return;
   }
 
+  const titleRow = `
+    <div class="vid-title">
+      <a href="${esc(r.videoUrl)}" target="_blank">${esc(r.title || "Video")}</a>
+    </div>`;
+
   if (r.status === "pending") {
-    if (statusPill) statusPill.textContent = "Analyzing…";
     resultDiv.innerHTML = `
-      <div><b>Status:</b> Analysis in progress…</div>
-      <div><b>Title:</b> ${r.title || "Video"}</div>
-      <div><b>Link:</b> <a href="${r.videoUrl}" target="_blank">${r.videoUrl}</a></div>
-    `;
+      <div class="pending"><span class="spinner"></span><span>Analyzing this video…</span></div>
+      ${titleRow}`;
     return;
   }
 
   if (r.status === "error") {
-    if (statusPill) statusPill.textContent = "Error";
     resultDiv.innerHTML = `
-      <div style="color:red"><b>Status:</b> Analysis failed</div>
-      <div><b>Title:</b> ${r.title || "Video"}</div>
-      <div><b>Link:</b> <a href="${r.videoUrl}" target="_blank">${r.videoUrl}</a></div>
-      <div><b>Error:</b> ${r.error || "Unknown error"}</div>
-    `;
+      <div class="errbox">Couldn't analyze this video. Check that the MindSafe
+      service is reachable, then reload the page.</div>
+      ${titleRow}`;
     return;
   }
 
-  const devScore =
-    typeof r.devScore === "number" ? `${r.devScore.toFixed(1)}/100` : "N/A";
-  const brainrot =
-    typeof r.brainrotIndex === "number" ? `${r.brainrotIndex.toFixed(1)}/100` : "N/A";
-  const tenPoint =
-    typeof r.tenPointScore === "number" ? `${r.tenPointScore}/10` : "N/A";
+  // Done
+  const ten = typeof r.tenPointScore === "number" ? r.tenPointScore : null;
+  const color = tierColor(ten);
+  const pct = ten != null ? ten * 10 : 0;
+  const sub = Array.isArray(r.reasons) && r.reasons.length ? esc(r.reasons[0]) : "";
 
-  const reasonsText = Array.isArray(r.reasons) ? r.reasons.join(", ") : "";
+  const devScore = typeof r.devScore === "number" ? r.devScore.toFixed(0) : "—";
+  const brainrot = typeof r.brainrotIndex === "number" ? r.brainrotIndex.toFixed(0) : "—";
 
   const dim =
-    r.rawApiResult && r.rawApiResult.dimension_scores
-      ? r.rawApiResult.dimension_scores
-      : null;
+    r.rawApiResult && r.rawApiResult.dimension_scores ? r.rawApiResult.dimension_scores : null;
+
+  const dimMap = {
+    Pacing: "Pacing",
+    Story: "Story coherence",
+    Language: "Language",
+    SEL: "Social-emotional",
+    Fantasy: "Fantasy/reality",
+    Interactivity: "Interactivity",
+  };
 
   let dimHtml = "";
   if (dim) {
-    // Map backend JSON keys to human labels
-    const dimMap = {
-      Pacing: "Pacing",
-      Story: "Story",
-      Language: "Language",
-      SEL: "Social-Emotional Learning",
-      Fantasy: "Fantasy",
-      Interactivity: "Interactivity",
-    };
-    dimHtml =
-      "<ul>" +
-      Object.entries(dimMap)
-        .map(([apiKey, labelText]) => {
-          const v = dim[apiKey];
-          const score = typeof v === "number" ? `${v.toFixed(1)}/100` : "N/A";
-          return `<li><b>${labelText}:</b> ${score}</li>`;
-        })
-        .join("") +
-      "</ul>";
+    dimHtml = '<div class="dims">' +
+      Object.entries(dimMap).map(([k, name]) => {
+        const v = dim[k];
+        if (typeof v !== "number") return "";
+        const c = Math.max(0, Math.min(100, v));
+        let col = "var(--concern)";
+        if (c >= 70) col = "var(--safe)";
+        else if (c >= 45) col = "var(--caution)";
+        return `
+          <div class="dim-row">
+            <div class="dim-top"><span class="dim-name">${name}</span><span class="dim-val">${c.toFixed(0)}</span></div>
+            <div class="bar"><div class="bar-fill" style="width:${c}%; background:${col};"></div></div>
+          </div>`;
+      }).join("") + "</div>";
   }
 
   resultDiv.innerHTML = `
-    <div style="margin-bottom:6px;">
-      <div style="font-size:12px; color:#6b7280;">Overall rating</div>
-      <div class="score" id="overall-score">${tenPoint}</div>
-      <div style="font-size:12px; color:#374151; margin-top:2px;">${r.label || "N/A"}</div>
+    <div class="hero">
+      <div class="ring" style="--pct:${pct}; --ring:${color};">
+        <span class="ring-num" style="color:${color};">${ten ?? "—"}<small>/10</small></span>
+      </div>
+      <div>
+        <div class="verdict-label" style="color:${color};">${esc(r.label || "—")}</div>
+        ${sub ? `<div class="verdict-sub">${sub}</div>` : ""}
+      </div>
     </div>
-    <hr style="border:none; border-top:1px solid #e5e7eb; margin:6px 0;" />
-    <div style="margin-bottom:4px;"><b>Developmental score:</b> ${devScore}</div>
-    <div style="margin-bottom:6px;"><b>Brainrot index:</b> ${brainrot}</div>
-    <div style="margin-bottom:4px;"><b>Title:</b> ${r.title || "Video"}</div>
-    <div style="margin-bottom:6px;"><b>Link:</b> <a href="${r.videoUrl}" target="_blank">${r.videoUrl}</a></div>
-    <div style="margin-bottom:4px;"><b>Reasons:</b> ${reasonsText}</div>
-    ${dimHtml ? `<div><b>Dimension scores:</b>${dimHtml}</div>` : ""}
+    ${titleRow}
+    <div class="stats">
+      <div class="stat"><span class="stat-k">Developmental score</span><span class="stat-v">${devScore}<span>/100</span></span></div>
+      <div class="stat"><span class="stat-k">Brainrot index</span><span class="stat-v">${brainrot}<span>/100</span></span></div>
+    </div>
+    ${dimHtml}
   `;
-
-  if (statusPill) statusPill.textContent = "Complete";
-
-  // Color-code the score badge
-  const scoreEl = document.getElementById("overall-score");
-  if (scoreEl && typeof r.tenPointScore === "number") {
-    const s = r.tenPointScore;
-    scoreEl.classList.remove("score-good", "score-ok", "score-warn");
-    if (s >= 8) {
-      scoreEl.classList.add("score-good");
-    } else if (s >= 5) {
-      scoreEl.classList.add("score-ok");
-    } else {
-      scoreEl.classList.add("score-warn");
-    }
-  }
 }
 
 // Load saved child age and wire up Save button
@@ -127,29 +128,24 @@ chrome.runtime.sendMessage({ type: "GET_LAST_SCORE" }, (resp) => {
   const resultDiv = document.getElementById("result");
 
   if (chrome.runtime.lastError) {
-    // Background might not be awake yet; fall back silently to storage.
     try {
       chrome.storage.local.get("lastScore", (data) => {
         if (chrome.runtime.lastError) {
-          resultDiv.innerHTML = `<div style="color:red"><b>Storage error:</b> ${chrome.runtime.lastError.message}</div>`;
+          resultDiv.innerHTML = `<div class="errbox">Storage error: ${esc(chrome.runtime.lastError.message)}</div>`;
         } else {
           renderResult(data.lastScore);
         }
       });
     } catch (e) {
-      resultDiv.innerHTML = `<div style="color:red"><b>Storage exception:</b> ${
-        e && e.message
-      }</div>`;
+      resultDiv.innerHTML = `<div class="errbox">Storage error: ${esc(e && e.message)}</div>`;
     }
     return;
   }
 
   if (resp && resp.error) {
-    resultDiv.innerHTML = `<div style="color:red"><b>Storage error:</b> ${resp.error}</div>`;
+    resultDiv.innerHTML = `<div class="errbox">Storage error: ${esc(resp.error)}</div>`;
     return;
   }
 
   renderResult(resp && resp.lastScore);
 });
-
-
