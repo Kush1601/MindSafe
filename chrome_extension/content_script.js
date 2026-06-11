@@ -22,32 +22,59 @@ function getVideoId() {
 // Runs in the user's session (cookies), so it works where server-side fails.
 // Content scripts can't read the page's ytInitialPlayerResponse (isolated
 // world), so we fetch the player response ourselves.
-async function getCaptionTracks(videoId) {
-  // YouTube's web client key is public and embedded in every page.
+function extractTracks(data) {
+  const tr =
+    data &&
+    data.captions &&
+    data.captions.playerCaptionsTracklistRenderer &&
+    data.captions.playerCaptionsTracklistRenderer.captionTracks;
+  return tr && tr.length ? tr : null;
+}
+
+async function playerRequest(videoId, client) {
   const INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-  const body = {
-    videoId,
-    context: {
-      client: { clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en" },
-    },
-  };
   const resp = await fetch(
     `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ videoId, context: { client } }),
       credentials: "include",
     }
   );
   if (!resp.ok) throw new Error(`player ${resp.status}`);
-  const data = await resp.json();
-  const tracks =
-    data &&
-    data.captions &&
-    data.captions.playerCaptionsTracklistRenderer &&
-    data.captions.playerCaptionsTracklistRenderer.captionTracks;
-  return tracks || null;
+  return resp.json();
+}
+
+async function getCaptionTracks(videoId) {
+  // 1) WEB client
+  try {
+    const t = extractTracks(await playerRequest(videoId, {
+      clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en",
+    }));
+    if (t) return t;
+  } catch (e) { console.warn("[MindSafe] WEB player failed:", e); }
+
+  // 2) ANDROID client — returns captions more reliably for some videos
+  try {
+    const t = extractTracks(await playerRequest(videoId, {
+      clientName: "ANDROID", clientVersion: "19.09.37",
+      androidSdkVersion: 30, hl: "en",
+    }));
+    if (t) return t;
+  } catch (e) { console.warn("[MindSafe] ANDROID player failed:", e); }
+
+  // 3) Last resort: scrape the watch page HTML for the caption track JSON
+  try {
+    const html = await (await fetch(location.href, { credentials: "include" })).text();
+    const m = html.match(/"captionTracks":(\[.*?\])/);
+    if (m) {
+      const tracks = JSON.parse(m[1].replace(/\\u0026/g, "&"));
+      if (tracks.length) return tracks;
+    }
+  } catch (e) { console.warn("[MindSafe] HTML scrape failed:", e); }
+
+  return null;
 }
 
 async function fetchTranscriptSegments() {
