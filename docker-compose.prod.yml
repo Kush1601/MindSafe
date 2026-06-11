@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Production compose for EC2 t2.micro (1 GB RAM).
 # No Jaeger — OTel tracing disabled at this tier.
 # Usage: docker-compose -f docker-compose.prod.yml up -d
@@ -11,7 +9,7 @@ services:
       context: ./ai-agents
       dockerfile: Dockerfile
       args:
-        INSTALL_ML_DEPS: "1"
+        INSTALL_ML_DEPS: "0"
     image: mindsafe-api
     ports:
       - "5001:5001"
