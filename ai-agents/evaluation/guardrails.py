@@ -212,7 +212,10 @@ def safety_floor_check(
         return "Not recommended"
 
     if segment_labels:
-        fear_count = sum(1 for s in segment_labels if s.get("fear_intense", False))
+        def _fear(s):
+            # segment_labels may be SegmentLabels dataclasses or plain dicts
+            return getattr(s, "fear_intense", None) if not isinstance(s, dict) else s.get("fear_intense", False)
+        fear_count = sum(1 for s in segment_labels if _fear(s))
         fear_fraction = fear_count / max(len(segment_labels), 1)
         if fear_fraction >= SAFETY_FLOOR_FEAR_FRACTION:
             _trips["safety_floor"] += 1
