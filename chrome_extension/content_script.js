@@ -10,40 +10,76 @@ console.log("[MindSafe] content script loaded on", location.href);
 // bot detection that blocks server-side downloads from datacenter IPs.
 // Returns an array of {start, end, text} segments, or null if unavailable.
 
+function getVideoId() {
+  try {
+    return new URL(location.href).searchParams.get("v");
+  } catch (_) {
+    return null;
+  }
+}
+
+// Ask YouTube's own innertube player endpoint for the caption track list.
+// Runs in the user's session (cookies), so it works where server-side fails.
+// Content scripts can't read the page's ytInitialPlayerResponse (isolated
+// world), so we fetch the player response ourselves.
+async function getCaptionTracks(videoId) {
+  // YouTube's web client key is public and embedded in every page.
+  const INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+  const body = {
+    videoId,
+    context: {
+      client: { clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en" },
+    },
+  };
+  const resp = await fetch(
+    `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      credentials: "include",
+    }
+  );
+  if (!resp.ok) throw new Error(`player ${resp.status}`);
+  const data = await resp.json();
+  const tracks =
+    data &&
+    data.captions &&
+    data.captions.playerCaptionsTracklistRenderer &&
+    data.captions.playerCaptionsTracklistRenderer.captionTracks;
+  return tracks || null;
+}
+
 async function fetchTranscriptSegments() {
   try {
-    // ytInitialPlayerResponse holds the caption track list
-    let player = window.ytInitialPlayerResponse;
-    if (!player) {
-      // Fallback: scrape it from the page HTML
-      const html = document.documentElement.innerHTML;
-      const m = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
-      if (m) {
-        try { player = JSON.parse(m[1]); } catch (_) {}
-      }
-    }
-    const tracks =
-      player &&
-      player.captions &&
-      player.captions.playerCaptionsTracklistRenderer &&
-      player.captions.playerCaptionsTracklistRenderer.captionTracks;
-
-    if (!tracks || tracks.length === 0) {
-      console.warn("[MindSafe] no caption tracks available");
+    const videoId = getVideoId();
+    if (!videoId) {
+      console.warn("[MindSafe] no video id in URL");
       return null;
     }
 
-    // Prefer English, else first available
-    const track =
-      tracks.find((t) => (t.languageCode || "").startsWith("en")) || tracks[0];
+    const tracks = await getCaptionTracks(videoId);
+    if (!tracks || tracks.length === 0) {
+      console.warn("[MindSafe] no caption tracks available for", videoId);
+      return null;
+    }
 
-    const resp = await fetch(track.baseUrl);
+    // Prefer manual English, then any English, then first track.
+    const track =
+      tracks.find((t) => (t.languageCode || "").startsWith("en") && t.kind !== "asr") ||
+      tracks.find((t) => (t.languageCode || "").startsWith("en")) ||
+      tracks[0];
+
+    const resp = await fetch(track.baseUrl, { credentials: "include" });
     if (!resp.ok) throw new Error(`caption fetch ${resp.status}`);
     const xml = await resp.text();
 
     const doc = new DOMParser().parseFromString(xml, "text/xml");
     const nodes = Array.from(doc.getElementsByTagName("text"));
-    if (nodes.length === 0) return null;
+    if (nodes.length === 0) {
+      console.warn("[MindSafe] caption track empty");
+      return null;
+    }
 
     const decoder = document.createElement("textarea");
     const segments = nodes.map((n) => {
