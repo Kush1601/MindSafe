@@ -27,7 +27,7 @@ from .metrics_pacing_audio import compute_pacing_audio_features
 from .metrics_text_basic import compute_basic_text_metrics
 from .metrics_llm_semantic import (
     llm_label_segments, compute_event_metrics_from_labels,
-    compute_narrative_metrics
+    compute_event_metrics_heuristic, compute_narrative_metrics
 )
 from .scoring import (
     assign_age_band, compute_dimension_scores,
@@ -282,6 +282,120 @@ def evaluate_video(video_path: str,
     print(f"{'='*60}\n")
     
     return results
+
+
+def evaluate_transcript(transcript_segments,
+                        child_age: float,
+                        llm_client: Optional[LLMClient] = None,
+                        video_title: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Evaluate a video using its transcript only (no video/audio download).
+
+    Used when captions are fetched client-side (e.g. by the Chrome extension)
+    and POSTed as text. Runs all text-based, semantic, and narrative metrics.
+    Video-only metrics (pacing, shot detection, audio loudness) are absent, so
+    their dimensions fall back to a neutral score — flagged in metadata.
+
+    Args:
+        transcript_segments: list of TranscriptSegment (start, end, text)
+        child_age: child age in years
+        llm_client: optional LLMClient (None → heuristics only)
+        video_title: optional title for metadata/logging
+
+    Returns:
+        Same results dict shape as evaluate_video(), with
+        metadata["analysis_mode"] == "transcript_only".
+    """
+    if llm_client is None and os.getenv("ANTHROPIC_API_KEY"):
+        llm_client = LLMClient(model=LLM_CONFIG["model"])
+
+    stage_latency: Dict[str, float] = {}
+    _t_pipeline = time.perf_counter()
+
+    # Duration derived from transcript timing
+    duration_sec = 0.0
+    if transcript_segments:
+        duration_sec = max((seg.end for seg in transcript_segments), default=0.0)
+    duration_min = duration_sec / 60.0 if duration_sec > 0 else 0.0
+
+    # Text metrics
+    with _span("text_basic"):
+        text_basic = compute_basic_text_metrics(transcript_segments)
+
+    # Semantic metrics
+    segment_labels = []
+    with _span("semantic_llm", llm_enabled=llm_client is not None):
+        if llm_client is not None:
+            segment_labels = llm_label_segments(
+                transcript_segments, llm_client,
+                chunk_duration=LLM_CONFIG["segment_duration"],
+            )
+            semantic_metrics = compute_event_metrics_from_labels(segment_labels, duration_min)
+        else:
+            semantic_metrics = compute_event_metrics_heuristic(transcript_segments, duration_min)
+
+    # Narrative coherence
+    with _span("narrative_coherence"):
+        narrative_metrics = compute_narrative_metrics(
+            transcript_segments,
+            llm_client=llm_client,
+            use_embeddings=True,
+            chunk_duration=LLM_CONFIG["segment_duration"],
+        )
+
+    # Merge — note: no pacing_audio (video-only metrics omitted)
+    raw_metrics = {
+        **text_basic,
+        **semantic_metrics,
+        **narrative_metrics,
+        "duration_minutes": duration_min,
+        "duration_seconds": duration_sec,
+    }
+
+    # Scoring
+    with _span("scoring", child_age=child_age):
+        age_band = assign_age_band(child_age)
+        age_band_label = AGE_BANDS[age_band]["label"]
+        dimension_scores = compute_dimension_scores(raw_metrics, age_band)
+        dev_score = aggregate_dev_score(dimension_scores, age_band)
+        brainrot_ix = aggregate_brainrot_index(dimension_scores, age_band)
+
+    recommendations = generate_recommendations(dimension_scores, raw_metrics, age_band)
+    interpretations = interpret_scores(dev_score, brainrot_ix)
+
+    from .guardrails import safety_floor_check
+    interpretations["overall"] = safety_floor_check(
+        interpretations["overall"], raw_metrics,
+        segment_labels=segment_labels or None,
+    )
+
+    stage_latency["total_pipeline_ms"] = round((time.perf_counter() - _t_pipeline) * 1000, 1)
+    logger.info("transcript_pipeline.complete total_ms=%.0f",
+                stage_latency["total_pipeline_ms"])
+
+    return {
+        "metadata": {
+            "video_path": video_title or "transcript",
+            "video_name": video_title or "transcript",
+            "evaluation_timestamp": datetime.now().isoformat(),
+            "child_age": child_age,
+            "age_band": age_band,
+            "age_band_label": age_band_label,
+            "duration_seconds": duration_sec,
+            "duration_minutes": duration_min,
+            "analysis_mode": "transcript_only",
+            "note": "Visual/audio pacing metrics unavailable; those dimensions use a neutral baseline.",
+        },
+        "raw_metrics": raw_metrics,
+        "dimension_scores": dimension_scores,
+        "overall_scores": {
+            "development_score": dev_score,
+            "brainrot_index": brainrot_ix,
+        },
+        "interpretations": interpretations,
+        "recommendations": recommendations,
+        "stage_latency_ms": stage_latency,
+    }
 
 
 def save_results(results: Dict[str, Any], output_path: str):

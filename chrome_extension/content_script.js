@@ -4,6 +4,63 @@
 
 console.log("[MindSafe] content script loaded on", location.href);
 
+// ====================== CAPTION FETCH ======================
+// Fetch the video transcript from the user's own browser session.
+// This runs on youtube.com with the user's cookies, so it bypasses the
+// bot detection that blocks server-side downloads from datacenter IPs.
+// Returns an array of {start, end, text} segments, or null if unavailable.
+
+async function fetchTranscriptSegments() {
+  try {
+    // ytInitialPlayerResponse holds the caption track list
+    let player = window.ytInitialPlayerResponse;
+    if (!player) {
+      // Fallback: scrape it from the page HTML
+      const html = document.documentElement.innerHTML;
+      const m = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
+      if (m) {
+        try { player = JSON.parse(m[1]); } catch (_) {}
+      }
+    }
+    const tracks =
+      player &&
+      player.captions &&
+      player.captions.playerCaptionsTracklistRenderer &&
+      player.captions.playerCaptionsTracklistRenderer.captionTracks;
+
+    if (!tracks || tracks.length === 0) {
+      console.warn("[MindSafe] no caption tracks available");
+      return null;
+    }
+
+    // Prefer English, else first available
+    const track =
+      tracks.find((t) => (t.languageCode || "").startsWith("en")) || tracks[0];
+
+    const resp = await fetch(track.baseUrl);
+    if (!resp.ok) throw new Error(`caption fetch ${resp.status}`);
+    const xml = await resp.text();
+
+    const doc = new DOMParser().parseFromString(xml, "text/xml");
+    const nodes = Array.from(doc.getElementsByTagName("text"));
+    if (nodes.length === 0) return null;
+
+    const decoder = document.createElement("textarea");
+    const segments = nodes.map((n) => {
+      const start = parseFloat(n.getAttribute("start") || "0");
+      const dur = parseFloat(n.getAttribute("dur") || "0");
+      decoder.innerHTML = n.textContent || "";
+      return { start, end: start + dur, text: decoder.value.replace(/\n/g, " ").trim() };
+    }).filter((s) => s.text.length > 0);
+
+    console.log(`[MindSafe] fetched ${segments.length} caption segments`);
+    return segments.length > 0 ? segments : null;
+  } catch (err) {
+    console.warn("[MindSafe] caption fetch failed:", err);
+    return null;
+  }
+}
+
 // ====================== URL HELPERS ======================
 
 function isWatchPage(urlString) {
@@ -297,15 +354,19 @@ let mindsafeIntervalRef = { id: null };
 
 // ====================== INIT ======================
 
-if (isWatchPage(location.href)) {
+async function startEvaluation() {
   console.log("[MindSafe] watch page detected, starting injection + API call");
+
+  // Fetch captions client-side first (bypasses server-side bot detection).
+  const segments = await fetchTranscriptSegments();
 
   // Ask background to start a fresh evaluation for this video
   chrome.runtime.sendMessage(
     {
       type: "NEW_VIDEO",
       videoUrl: location.href,
-      title: document.title
+      title: document.title,
+      segments: segments  // null → background falls back to URL download
     },
     (resp) => {
       if (chrome.runtime.lastError) {
@@ -339,6 +400,10 @@ if (isWatchPage(location.href)) {
     if (!isWatchPage(location.href)) return;
     renderPanel(msg.lastScore);
   });
+}
+
+if (isWatchPage(location.href)) {
+  startEvaluation();
 } else {
   console.log("[MindSafe] not a /watch page, doing nothing");
 }
@@ -372,23 +437,26 @@ setInterval(() => {
 
   renderPanel(pendingData);
 
-  chrome.runtime.sendMessage(
-    {
-      type: "NEW_VIDEO",
-      videoUrl: current,
-      title: document.title
-    },
-    (resp) => {
-      if (chrome.runtime.lastError) {
-        console.warn(
-          "[MindSafe] NEW_VIDEO sendMessage error (nav):",
-          chrome.runtime.lastError
-        );
-      } else if (resp && resp.lastScore) {
-        renderPanel(resp.lastScore);
+  fetchTranscriptSegments().then((segments) => {
+    chrome.runtime.sendMessage(
+      {
+        type: "NEW_VIDEO",
+        videoUrl: current,
+        title: document.title,
+        segments: segments
+      },
+      (resp) => {
+        if (chrome.runtime.lastError) {
+          console.warn(
+            "[MindSafe] NEW_VIDEO sendMessage error (nav):",
+            chrome.runtime.lastError
+          );
+        } else if (resp && resp.lastScore) {
+          renderPanel(resp.lastScore);
+        }
       }
-    }
-  );
+    );
+  });
 
   // Restart polling so GET_LAST_SCORE keeps updating until the new
   // evaluation reaches a terminal state.

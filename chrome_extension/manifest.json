@@ -10,6 +10,7 @@
     "https://www.youtubekids.com/*",
     "https://kids.youtube.com/*",
     "http://localhost:5001/*",
+    "http://100.54.74.194:5001/*",
     "https://*.amazonaws.com/*",
     "https://*.elb.amazonaws.com/*"
   ],

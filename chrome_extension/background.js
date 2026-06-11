@@ -96,17 +96,29 @@ async function pollJob(apiBase, jobId, maxWaitMs = 900_000) {
   throw new Error("Evaluation timed out after 15 minutes");
 }
 
-async function evaluateVideoWithApi(videoUrl, childAge, meta) {
+async function evaluateVideoWithApi(videoUrl, childAge, meta, segments) {
   const apiBase = await getApiBaseUrl();
-  const submitUrl = new URL("/evaluate", apiBase).toString();
 
-  console.log("[MindSafe BG] Submitting job to:", submitUrl);
+  // Prefer transcript endpoint when the content script supplied captions —
+  // this avoids server-side YouTube download (and its bot-detection wall).
+  const useTranscript = Array.isArray(segments) && segments.length > 0;
+  const submitUrl = useTranscript
+    ? new URL("/evaluate/transcript", apiBase).toString()
+    : new URL("/evaluate", apiBase).toString();
+  const submitBody = useTranscript
+    ? { segments, age: childAge, url: videoUrl, title: meta && meta.title }
+    : { url: videoUrl, age: childAge };
+
+  console.log(
+    "[MindSafe BG] Submitting job to:", submitUrl,
+    useTranscript ? `(transcript, ${segments.length} segments)` : "(url download)"
+  );
 
   try {
     const submitResp = await fetch(submitUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: videoUrl, age: childAge }),
+      body: JSON.stringify(submitBody),
     });
 
     if (!submitResp.ok) {
@@ -297,7 +309,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       evaluateVideoWithApi(videoUrl, resolvedAge, {
         videoId: msg.videoId || null,
         title
-      });
+      }, msg.segments);
     });
 
     // Respond quickly; we don't keep sendResponse open for minutes,

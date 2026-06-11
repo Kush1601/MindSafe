@@ -127,6 +127,19 @@ class EvaluateRequest(BaseModel):
         return v.strip()
 
 
+class TranscriptSegmentIn(BaseModel):
+    start: float = Field(0.0, ge=0)
+    end: float = Field(0.0, ge=0)
+    text: str
+
+
+class EvaluateTranscriptRequest(BaseModel):
+    segments: list[TranscriptSegmentIn] = Field(..., min_length=1)
+    age: float = Field(..., ge=0, le=18)
+    url: str | None = Field(None, description="Source URL (for caching/logging only)")
+    title: str | None = None
+
+
 class JobStatus(BaseModel):
     job_id: str
     status: str            # "queued" | "processing" | "done" | "failed"
@@ -285,6 +298,57 @@ def _run_pipeline(job_id: str, youtube_url: str, child_age: float) -> None:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+def _run_transcript_pipeline(job_id: str, segments: list, child_age: float,
+                             url: str | None, title: str | None) -> None:
+    """Evaluate using client-supplied transcript text — no YouTube download."""
+    from evaluation.evaluate_video import evaluate_transcript
+    from evaluation.video_preprocess import TranscriptSegment
+
+    _jobs[job_id]["status"] = "processing"
+    log.info("job.start", job_id=job_id, mode="transcript", age=child_age)
+
+    try:
+        ts = [TranscriptSegment(start=s.start, end=s.end, text=s.text) for s in segments]
+
+        llm_client = None
+        if ANTHROPIC_KEY:
+            from evaluation.llm_client import LLMClient
+            llm_client = LLMClient(api_key=ANTHROPIC_KEY)
+
+        results = evaluate_transcript(ts, child_age, llm_client=llm_client, video_title=title)
+
+        if llm_client is not None:
+            try:
+                results["parent_summary"] = llm_client.generate_parent_summary(
+                    {
+                        "overall_scores": results.get("overall_scores"),
+                        "interpretations": results.get("interpretations"),
+                        "dimension_scores": results.get("dimension_scores"),
+                        "recommendations": results.get("recommendations"),
+                    },
+                    child_age,
+                )
+            except Exception as exc:
+                log.warning("parent_summary.failed", job_id=job_id, error=str(exc))
+
+        if url:
+            _save_to_supabase(url, child_age, results)
+
+        log.info("job.done", job_id=job_id, mode="transcript")
+        _jobs[job_id].update(
+            status="done",
+            completed_at=datetime.now(UTC).isoformat(),
+            result=results,
+        )
+    except Exception as exc:
+        log.error("job.failed", job_id=job_id, error=str(exc))
+        _jobs[job_id].update(
+            status="failed",
+            completed_at=datetime.now(UTC).isoformat(),
+            error=str(exc),
+        )
+
+
 # ---------- Routes ----------
 
 @app.get("/health")
@@ -339,6 +403,43 @@ def submit_evaluation(body: EvaluateRequest, background_tasks: BackgroundTasks):
         "evaluate.queued", job_id=job_id,
         video_id=pseudonymize_url(body.url), age=body.age,
     )
+    return {"job_id": job_id, "status": "queued"}
+
+
+@app.post("/evaluate/transcript", status_code=202, dependencies=[Depends(_check_api_key)])
+def submit_transcript_evaluation(body: EvaluateTranscriptRequest):
+    """
+    Evaluate a video from its transcript (captions fetched client-side).
+    Returns a job_id immediately (HTTP 202). Poll GET /evaluate/{job_id}.
+
+    This path avoids server-side YouTube download — the extension fetches
+    captions from the user's own browser session, sidestepping bot detection.
+    """
+    # Cache hit on URL → return immediately
+    if body.url:
+        cached = _get_cached(body.url)
+        if cached is not None:
+            job_id = str(uuid.uuid4())[:8]
+            now = datetime.now(UTC).isoformat()
+            _jobs[job_id] = {
+                "job_id": job_id, "status": "done",
+                "submitted_at": now, "completed_at": now,
+                "result": cached, "error": None,
+            }
+            log.info("evaluate.cache_hit", job_id=job_id, mode="transcript")
+            return {"job_id": job_id, "status": "done", "cache_hit": True}
+
+    job_id = str(uuid.uuid4())[:8]
+    _jobs[job_id] = {
+        "job_id": job_id, "status": "queued",
+        "submitted_at": datetime.now(UTC).isoformat(),
+        "completed_at": None, "result": None, "error": None,
+    }
+    _executor.submit(
+        _run_transcript_pipeline, job_id, body.segments, body.age, body.url, body.title
+    )
+    log.info("evaluate.queued", job_id=job_id, mode="transcript",
+             segments=len(body.segments), age=body.age)
     return {"job_id": job_id, "status": "queued"}
 
 
