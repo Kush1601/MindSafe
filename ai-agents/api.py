@@ -140,6 +140,13 @@ class EvaluateTranscriptRequest(BaseModel):
     title: str | None = None
 
 
+class EvaluateMetadataRequest(BaseModel):
+    title: str = Field(..., min_length=1)
+    age: float = Field(..., ge=0, le=18)
+    channel: str | None = None
+    url: str | None = None
+
+
 class JobStatus(BaseModel):
     job_id: str
     status: str            # "queued" | "processing" | "done" | "failed"
@@ -349,6 +356,37 @@ def _run_transcript_pipeline(job_id: str, segments: list, child_age: float,
         )
 
 
+def _run_metadata_pipeline(job_id: str, title: str, child_age: float,
+                           channel: str | None, url: str | None) -> None:
+    """Title/channel-only estimate when a video has no captions."""
+    from evaluation.evaluate_video import evaluate_metadata
+
+    _jobs[job_id]["status"] = "processing"
+    log.info("job.start", job_id=job_id, mode="metadata", age=child_age)
+
+    try:
+        llm_client = None
+        if ANTHROPIC_KEY:
+            from evaluation.llm_client import LLMClient
+            llm_client = LLMClient(api_key=ANTHROPIC_KEY)
+
+        results = evaluate_metadata(title, child_age, channel=channel, llm_client=llm_client)
+
+        log.info("job.done", job_id=job_id, mode="metadata")
+        _jobs[job_id].update(
+            status="done",
+            completed_at=datetime.now(UTC).isoformat(),
+            result=results,
+        )
+    except Exception as exc:
+        log.error("job.failed", job_id=job_id, error=str(exc))
+        _jobs[job_id].update(
+            status="failed",
+            completed_at=datetime.now(UTC).isoformat(),
+            error=str(exc),
+        )
+
+
 # ---------- Routes ----------
 
 @app.get("/health")
@@ -440,6 +478,26 @@ def submit_transcript_evaluation(body: EvaluateTranscriptRequest):
     )
     log.info("evaluate.queued", job_id=job_id, mode="transcript",
              segments=len(body.segments), age=body.age)
+    return {"job_id": job_id, "status": "queued"}
+
+
+@app.post("/evaluate/metadata", status_code=202, dependencies=[Depends(_check_api_key)])
+def submit_metadata_evaluation(body: EvaluateMetadataRequest):
+    """
+    Estimate suitability from title/channel alone — used when a video has no
+    captions, so neither transcript nor server-side download is possible.
+    Lower confidence; result is flagged analysis_mode == "metadata_only".
+    """
+    job_id = str(uuid.uuid4())[:8]
+    _jobs[job_id] = {
+        "job_id": job_id, "status": "queued",
+        "submitted_at": datetime.now(UTC).isoformat(),
+        "completed_at": None, "result": None, "error": None,
+    }
+    _executor.submit(
+        _run_metadata_pipeline, job_id, body.title, body.age, body.channel, body.url
+    )
+    log.info("evaluate.queued", job_id=job_id, mode="metadata", age=body.age)
     return {"job_id": job_id, "status": "queued"}
 
 

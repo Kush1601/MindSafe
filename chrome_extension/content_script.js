@@ -18,6 +18,20 @@ function getVideoId() {
   }
 }
 
+// Best-effort channel name from the watch page DOM.
+function getChannelName() {
+  const el =
+    document.querySelector("ytd-channel-name #text a") ||
+    document.querySelector("ytd-channel-name a") ||
+    document.querySelector("#owner #channel-name a");
+  return el ? el.textContent.trim() : null;
+}
+
+// Strip the trailing " - YouTube" that document.title carries.
+function getCleanTitle() {
+  return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
+}
+
 // Ask YouTube's own innertube player endpoint for the caption track list.
 // Runs in the user's session (cookies), so it works where server-side fails.
 // Content scripts can't read the page's ytInitialPlayerResponse (isolated
@@ -514,8 +528,9 @@ async function startEvaluation() {
     {
       type: "NEW_VIDEO",
       videoUrl: location.href,
-      title: document.title,
-      segments: segments  // null → background falls back to URL download
+      title: getCleanTitle(),
+      channel: getChannelName(),
+      segments: segments  // null/empty → background uses metadata-only estimate
     },
     (resp) => {
       if (chrome.runtime.lastError) {
@@ -591,7 +606,8 @@ setInterval(() => {
       {
         type: "NEW_VIDEO",
         videoUrl: current,
-        title: document.title,
+        title: getCleanTitle(),
+        channel: getChannelName(),
         segments: segments
       },
       (resp) => {

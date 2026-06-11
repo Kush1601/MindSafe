@@ -99,20 +99,29 @@ async function pollJob(apiBase, jobId, maxWaitMs = 900_000) {
 async function evaluateVideoWithApi(videoUrl, childAge, meta, segments) {
   const apiBase = await getApiBaseUrl();
 
-  // Prefer transcript endpoint when the content script supplied captions —
-  // this avoids server-side YouTube download (and its bot-detection wall).
+  // Routing, in order of fidelity:
+  //  1. Captions available → /evaluate/transcript (full analysis, client-side)
+  //  2. No captions → /evaluate/metadata (title-only estimate; always works)
+  // We never use the server-side URL download from the extension — it hits
+  // YouTube's bot-detection wall on datacenter IPs.
   const useTranscript = Array.isArray(segments) && segments.length > 0;
-  const submitUrl = useTranscript
-    ? new URL("/evaluate/transcript", apiBase).toString()
-    : new URL("/evaluate", apiBase).toString();
-  const submitBody = useTranscript
-    ? { segments, age: childAge, url: videoUrl, title: meta && meta.title }
-    : { url: videoUrl, age: childAge };
+  let mode, submitUrl, submitBody;
+  if (useTranscript) {
+    mode = `transcript, ${segments.length} segments`;
+    submitUrl = new URL("/evaluate/transcript", apiBase).toString();
+    submitBody = { segments, age: childAge, url: videoUrl, title: meta && meta.title };
+  } else {
+    mode = "metadata (no captions)";
+    submitUrl = new URL("/evaluate/metadata", apiBase).toString();
+    submitBody = {
+      title: (meta && meta.title) || "Video",
+      age: childAge,
+      channel: meta && meta.channel,
+      url: videoUrl,
+    };
+  }
 
-  console.log(
-    "[MindSafe BG] Submitting job to:", submitUrl,
-    useTranscript ? `(transcript, ${segments.length} segments)` : "(url download)"
-  );
+  console.log("[MindSafe BG] Submitting job to:", submitUrl, `(${mode})`);
 
   try {
     const submitResp = await fetch(submitUrl, {
@@ -308,7 +317,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           : childAge;
       evaluateVideoWithApi(videoUrl, resolvedAge, {
         videoId: msg.videoId || null,
-        title
+        title,
+        channel: msg.channel || null
       }, msg.segments);
     });
 

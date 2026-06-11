@@ -398,6 +398,100 @@ def evaluate_transcript(transcript_segments,
     }
 
 
+def evaluate_metadata(title: str,
+                      child_age: float,
+                      channel: Optional[str] = None,
+                      llm_client: Optional[LLMClient] = None) -> Dict[str, Any]:
+    """
+    Lightweight fallback when no transcript is available (e.g. a video with no
+    captions). Asks the LLM to estimate developmental suitability from the
+    title and channel alone. Lower confidence than transcript analysis — the
+    result is flagged with analysis_mode == "metadata_only".
+    """
+    if llm_client is None and os.getenv("ANTHROPIC_API_KEY"):
+        llm_client = LLMClient(model=LLM_CONFIG["model"])
+
+    age_band = assign_age_band(child_age)
+    age_band_label = AGE_BANDS[age_band]["label"]
+
+    if llm_client is None:
+        # No LLM — return a neutral, clearly-marked "unknown" result.
+        return _metadata_result(title, channel, child_age, age_band, age_band_label,
+                                dev=50.0, brainrot=50.0,
+                                verdict="Use parental judgment",
+                                summary="No transcript or AI available — can't assess this video automatically.")
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "development_score": {"type": "number"},
+            "brainrot_index": {"type": "number"},
+            "verdict": {"type": "string"},
+            "summary": {"type": "string"},
+        },
+        "required": ["development_score", "brainrot_index", "verdict", "summary"],
+        "additionalProperties": False,
+    }
+    system_prompt = (
+        "You are a child-development media expert. You estimate developmental "
+        "suitability of a video from its title and channel only, with no transcript. "
+        "Be cautious and explicit about uncertainty."
+    )
+    user_prompt = (
+        f"Estimate how developmentally appropriate this video likely is for a "
+        f"{child_age}-year-old ({age_band_label}).\n\n"
+        f"Title: {title}\n"
+        f"Channel: {channel or 'unknown'}\n\n"
+        f"development_score: 0-100, higher = more developmentally supportive. "
+        f"brainrot_index: 0-100, higher = more overstimulating/low-value. "
+        f"verdict: short phrase. "
+        f"summary: 2-3 sentences for a parent, noting this is a title-only estimate."
+    )
+    try:
+        data = llm_client.json_chat(system_prompt, user_prompt, schema=schema)
+    except Exception as exc:
+        logger.warning("metadata.llm_failed error=%s", exc)
+        return _metadata_result(title, channel, child_age, age_band, age_band_label,
+                                dev=50.0, brainrot=50.0,
+                                verdict="Use parental judgment",
+                                summary="Couldn't estimate from the title. Use your own judgment.")
+
+    return _metadata_result(
+        title, channel, child_age, age_band, age_band_label,
+        dev=float(data.get("development_score", 50.0)),
+        brainrot=float(data.get("brainrot_index", 50.0)),
+        verdict=str(data.get("verdict", "Use parental judgment")),
+        summary=str(data.get("summary", "")),
+    )
+
+
+def _metadata_result(title, channel, child_age, age_band, age_band_label,
+                     dev, brainrot, verdict, summary) -> Dict[str, Any]:
+    return {
+        "metadata": {
+            "video_path": title,
+            "video_name": title,
+            "channel": channel,
+            "evaluation_timestamp": datetime.now().isoformat(),
+            "child_age": child_age,
+            "age_band": age_band,
+            "age_band_label": age_band_label,
+            "analysis_mode": "metadata_only",
+            "note": "No captions available — estimated from title/channel only. Lower confidence.",
+        },
+        "raw_metrics": {},
+        "dimension_scores": {},
+        "overall_scores": {
+            "development_score": dev,
+            "brainrot_index": brainrot,
+        },
+        "interpretations": interpret_scores(dev, brainrot) | {"overall": verdict},
+        "recommendations": {"strengths": [], "concerns": []},
+        "parent_summary": summary,
+        "stage_latency_ms": {},
+    }
+
+
 def save_results(results: Dict[str, Any], output_path: str):
     """Save evaluation results to JSON file."""
     with open(output_path, 'w', encoding='utf-8') as f:
