@@ -111,11 +111,11 @@ SUPABASE_SERVICE_ROLE_KEY=...
 
 ---
 
-## Deployment (AWS ECS Fargate)
+## Deployment
 
-See [infra/README.md](infra/README.md) for full step-by-step.
-
-Auto-deploy on push to `main` via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+Runs on a single **EC2** instance via `docker-compose -f docker-compose.prod.yml`
+(API + frontend + PO-token sidecar). See [infra/README.md](infra/README.md) for
+the full step-by-step, including an ECS Fargate option for scaling up.
 
 ---
 
@@ -215,5 +215,5 @@ MindSafe/
 ├── infra/                  ECS task definitions + deploy scripts
 ├── docker-compose.yml      Local dev (with Jaeger)
 ├── docker-compose.prod.yml Production (EC2 / bare metal)
-└── .github/workflows/      CI + ECS auto-deploy
+└── .github/workflows/      CI (lint + pytest + eval gate)
 ```

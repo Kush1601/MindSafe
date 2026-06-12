@@ -7,6 +7,7 @@ select = ["E", "F", "W", "I", "UP"]
 ignore = [
     "E501",
     "F401",
+    "E402",   # imports after sys.path setup / load_dotenv() — intentional
     "UP035",  # Dict/List/Tuple from typing — not unsafe, just verbose to fix
     "F841",   # unused variable cat_to_idx in kappa impl
 ]

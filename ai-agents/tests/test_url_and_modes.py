@@ -10,8 +10,20 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import pytest
 
 from evaluation.utils import canonical_youtube_url
-from evaluation.evaluate_video import evaluate_transcript, evaluate_metadata
-from evaluation.video_preprocess import TranscriptSegment
+
+# evaluate_video pulls in heavy ML deps (numpy/librosa/opencv) that aren't
+# installed in the lightweight CI environment. Skip those tests when absent.
+try:
+    from evaluation.evaluate_video import evaluate_metadata, evaluate_transcript
+    from evaluation.video_preprocess import TranscriptSegment
+    _PIPELINE_AVAILABLE = True
+except ImportError:
+    _PIPELINE_AVAILABLE = False
+
+requires_pipeline = pytest.mark.skipif(
+    not _PIPELINE_AVAILABLE,
+    reason="evaluation pipeline deps (numpy/librosa/opencv) not installed",
+)
 
 
 class TestCanonicalUrl:
@@ -50,6 +62,7 @@ class TestCanonicalUrl:
         assert canonical_youtube_url("https://example.com/x") == "https://example.com/x"
 
 
+@requires_pipeline
 class TestEvaluateTranscript:
     """Heuristics-only path (no LLM) — deterministic, no network."""
 
@@ -78,6 +91,7 @@ class TestEvaluateTranscript:
         assert 0 <= br <= 100
 
 
+@requires_pipeline
 class TestEvaluateMetadata:
     """Metadata fallback with no LLM returns a clearly-marked neutral result."""
 
