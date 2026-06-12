@@ -18,77 +18,30 @@
     <div class="shows-inner">
       <h1>Example evaluations</h1>
       <p style="text-align:center; color:#5a6184; margin:-8px 0 8px; font-size:15px;">
-        Illustrative scores across a range of kids' content. Run any video
-        yourself with the extension for a live result.
+        Live scores from real MindSafe evaluations. Analyze any of these with the
+        extension and its score appears here automatically.
       </p>
 
       <div class="carousel-wrapper">
         <div class="carousel-viewport">
           <div class="carousel-track">
-            <!-- Card 1 -->
+            {% for card in cards %}
             <article class="card">
               <div class="card-video-wrapper">
-                <iframe src="https://www.youtube.com/embed/HNiFC1aVBa0" 
+                <iframe src="{{ card.embed }}"
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowfullscreen></iframe>
               </div>
               <div class="card-bottom">
-                <span class="card-score">10/10 score</span>
+                {% if card.ten is not none %}
+                <span class="card-score">{{ card.ten }}/10 score</span>
+                {% else %}
+                <span class="card-score">Not yet scored</span>
+                {% endif %}
               </div>
             </article>
-
-            <!-- Card 2 -->
-            <article class="card">
-              <div class="card-video-wrapper">
-                <iframe src="https://www.youtube.com/embed/21_KQbzw6K4?list=PLfX0BhjZoHNnO4eqnhAt0TSQFSl4agZjA"
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-              </div>
-              <div class="card-bottom">
-                <span class="card-score">8/10 score</span>
-              </div>
-            </article>
-
-            <!-- Card 3 -->
-            <article class="card">
-              <div class="card-video-wrapper">
-                <iframe src="https://www.youtube.com/embed/foYPoIj4wlM" 
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-              </div>
-              <div class="card-bottom">
-                <span class="card-score">4/10 score</span>
-              </div>
-            </article>
-
-            <!-- Card 4 -->
-            <article class="card">
-              <div class="card-video-wrapper">
-                <iframe src="https://www.youtube.com/embed/JD28VAUCfO0" 
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-              </div>
-              <div class="card-bottom">
-                <span class="card-score">7/10 score</span>
-              </div>
-            </article>
-
-            <!-- Card 5 -->
-            <article class="card">
-              <div class="card-video-wrapper">
-                <iframe src="https://www.youtube.com/embed/Hf9SI76pRbQ" 
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-              </div>
-              <div class="card-bottom">
-                <span class="card-score">8/10 score</span>
-              </div>
-            </article>
+            {% endfor %}
           </div>
         </div>
       </div>

@@ -35,6 +35,49 @@ def form():
     return render_template("form.html")
 
 
+# Featured example videos shown on the landing page carousel. Scores are read
+# live from Supabase when the video has been analyzed; otherwise the card shows
+# "Not yet scored" rather than a fabricated number.
+FEATURED_VIDEOS = [
+    "https://www.youtube.com/watch?v=HNiFC1aVBa0",
+    "https://www.youtube.com/watch?v=21_KQbzw6K4",
+    "https://www.youtube.com/watch?v=foYPoIj4wlM",
+    "https://www.youtube.com/watch?v=JD28VAUCfO0",
+    "https://www.youtube.com/watch?v=Hf9SI76pRbQ",
+]
+
+
+def _dev_to_ten(dev_score):
+    if dev_score is None:
+        return None
+    return max(1, min(10, round(float(dev_score) / 10)))
+
+
+def _featured_with_scores():
+    """Pair each featured video with its real dev score from Supabase (or None)."""
+    scores = {}
+    if supabase is not None:
+        try:
+            resp = (
+                supabase.table("video_eval")
+                .select("video_path, dev_score")
+                .in_("video_path", FEATURED_VIDEOS)
+                .execute()
+            )
+            for row in resp.data or []:
+                scores[row["video_path"]] = row.get("dev_score")
+        except Exception:
+            pass
+    cards = []
+    for url in FEATURED_VIDEOS:
+        vid = url.split("v=")[-1]
+        cards.append({
+            "embed": f"https://www.youtube.com/embed/{vid}",
+            "ten": _dev_to_ten(scores.get(url)),
+        })
+    return cards
+
+
 # Section partials, loaded into index.html via fetch(). Served explicitly
 # because Flask does not expose the raw templates/ directory.
 @app.route("/partials/<name>")
@@ -42,6 +85,8 @@ def partial(name):
     allowed = {"metrics", "shows", "extension"}
     if name not in allowed:
         return ("Not found", 404)
+    if name == "shows":
+        return render_template("shows.html", cards=_featured_with_scores())
     return render_template(f"{name}.html")
 
 @app.route("/loader")
