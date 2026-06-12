@@ -144,6 +144,44 @@ async function fetchTranscriptSegments() {
   }
 }
 
+// ====================== IN-BROWSER WHISPER ======================
+// When a video has no captions, transcribe its audio locally with Whisper
+// (transformers.js, WebGPU/WASM). Runs entirely in the user's browser, so it
+// works on any device with no server cost. Shows progress on the panel.
+
+let _whisperModule = null;
+
+async function tryWhisperTranscription() {
+  try {
+    const showStatus = (text) =>
+      renderPanel({
+        videoUrl: location.href,
+        title: getCleanTitle(),
+        status: "pending",
+        label: "Listening to video…",
+        reasons: [text]
+      });
+
+    showStatus("No captions found — transcribing audio locally…");
+
+    if (!_whisperModule) {
+      const url = chrome.runtime.getURL("whisper.js");
+      _whisperModule = await import(url);
+    }
+
+    const segments = await _whisperModule.transcribeCurrentVideo(showStatus);
+    if (segments && segments.length > 0) {
+      console.log(`[MindSafe] Whisper produced ${segments.length} segments`);
+      return segments;
+    }
+    console.warn("[MindSafe] Whisper produced no segments");
+    return null;
+  } catch (err) {
+    console.warn("[MindSafe] in-browser Whisper failed:", err);
+    return null; // fall through to metadata estimate
+  }
+}
+
 // ====================== URL HELPERS ======================
 
 function isWatchPage(urlString) {
@@ -520,8 +558,14 @@ let mindsafeIntervalRef = { id: null };
 async function startEvaluation() {
   console.log("[MindSafe] watch page detected, starting injection + API call");
 
-  // Fetch captions client-side first (bypasses server-side bot detection).
-  const segments = await fetchTranscriptSegments();
+  // Tier 1: captions (instant, full transcript).
+  let segments = await fetchTranscriptSegments();
+
+  // Tier 2: no captions → transcribe audio in-browser with Whisper.
+  if (!segments || segments.length === 0) {
+    segments = await tryWhisperTranscription();
+  }
+  // Tier 3 (if still none): background falls back to a metadata-only estimate.
 
   // Ask background to start a fresh evaluation for this video
   chrome.runtime.sendMessage(
