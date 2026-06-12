@@ -10,7 +10,7 @@ create table if not exists public.video_eval (
     id                      bigserial primary key,
     video_path              text        not null unique,   -- YouTube URL (pseudonymized in logs, raw here)
     child_age               numeric(4,1),                  -- e.g. 4.0
-    age_band                integer,                       -- 0=infant, 1=toddler, 2=preschool, etc.
+    age_band                text,                          -- band key, e.g. "G4_5_8"
     age_band_name           text,                          -- "Preschool (3-5)"
     duration_seconds        numeric,
     duration_minutes        numeric,
