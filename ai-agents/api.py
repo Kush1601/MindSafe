@@ -165,9 +165,24 @@ def _validate_youtube_url(url: str) -> bool:
     ))
 
 
+def _canonical_url(url: str | None) -> str | None:
+    """
+    Normalize a YouTube URL to https://www.youtube.com/watch?v=<id> so cache
+    keys and featured-video lookups match regardless of extra params
+    (&t=, &list=, youtu.be short links, etc.).
+    """
+    if not url:
+        return url
+    m = re.search(r"(?:v=|youtu\.be/|/shorts/)([A-Za-z0-9_-]{11})", url)
+    if m:
+        return f"https://www.youtube.com/watch?v={m.group(1)}"
+    return url
+
+
 def _get_cached(video_url: str) -> dict | None:
     if supabase is None:
         return None
+    video_url = _canonical_url(video_url)
     try:
         resp = (
             supabase.table("video_eval")
@@ -194,6 +209,7 @@ def _get_cached(video_url: str) -> dict | None:
 def _save_to_supabase(video_url: str, child_age: float, results: dict) -> None:
     if supabase is None:
         return
+    video_url = _canonical_url(video_url)
     try:
         metadata = results.get("metadata", {}) or {}
         overall  = results.get("overall_scores", {}) or {}
@@ -371,6 +387,9 @@ def _run_metadata_pipeline(job_id: str, title: str, child_age: float,
             llm_client = LLMClient(api_key=ANTHROPIC_KEY)
 
         results = evaluate_metadata(title, child_age, channel=channel, llm_client=llm_client)
+
+        if url:
+            _save_to_supabase(url, child_age, results)
 
         log.info("job.done", job_id=job_id, mode="metadata")
         _jobs[job_id].update(
