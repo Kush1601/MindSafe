@@ -118,6 +118,23 @@ class TestSafetyFloor:
         result = safety_floor_check("Recommended", {"aggression_rate": 0.0}, segment_labels=labels)
         assert result == "Recommended"
 
+    def test_fear_fraction_with_dataclass_labels(self):
+        # Regression: the LLM path passes SegmentLabels dataclasses, not dicts.
+        # safety_floor_check must read .fear_intense, not .get("fear_intense").
+        from evaluation.metrics_llm_semantic import SegmentLabels
+
+        def make(fear):
+            return SegmentLabels(
+                start_time=0.0, end_time=1.0,
+                prosocial_events=[], aggressive_events=[],
+                fantasy_level="none", sel_strategies=[],
+                direct_address=False, fear_intense=fear, impossible_events=[],
+            )
+
+        labels = [make(True)] * 5 + [make(False)] * 5
+        result = safety_floor_check("Recommended", {"aggression_rate": 0.0}, segment_labels=labels)
+        assert result == "Not recommended"
+
 
 class TestAbstention:
     def test_sparse_transcript(self):

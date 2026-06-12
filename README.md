@@ -6,14 +6,26 @@ A clinical-AI pipeline that evaluates YouTube and YouTube Kids videos for develo
 
 ## What it does
 
-- Takes a YouTube URL + child's age
-- Downloads and processes the video locally (no raw audio sent to cloud)
-- Transcribes audio with local **Whisper**
-- Computes 30+ heuristic + optional LLM metrics across 6 developmental dimensions
+- Reads a YouTube video's **transcript** and a child's age
+- Computes heuristic + optional LLM metrics across 6 developmental dimensions
 - Returns a **Developmental Score (0–100)**, **Brainrot Index (0–100)**, and **1–10 MindSafe rating**
 - Displays the score as a card injected directly into YouTube via a Chrome extension
 - Exports results as **FHIR R4 Bundles** (Observations with LOINC codes, RiskAssessment, DocumentReference)
 - Caches evaluations in **Supabase** so repeat lookups are instant
+
+### How the transcript is obtained (3-tier, browser-side)
+
+YouTube blocks server-side video downloads from datacenter IPs, so the
+Chrome extension obtains the transcript from the user's own browser session
+and sends only **text** to the API — no video or audio leaves the device:
+
+1. **Captions** — if the video has captions, the extension fetches the
+   transcript directly (instant, full analysis).
+2. **In-browser Whisper** — if there are no captions, a Whisper model runs
+   locally in the browser (WebGPU / WASM via `transformers.js`) to transcribe
+   the audio. No server, no upload, works on any device.
+3. **Metadata estimate** — if transcription isn't possible, the API produces a
+   lower-confidence estimate from the title/channel, clearly flagged as such.
 
 ---
 
@@ -29,17 +41,20 @@ infra/                   ECS task definitions, deploy scripts, docker-compose
 ### Pipeline stages (each traced with OpenTelemetry)
 
 ```
-video URL
-  → download (yt-dlp)
-  → extract audio/video (ffmpeg)
-  → transcribe (Whisper, local)
-  → heuristic metrics (pacing, language, SEL, narrative, fantasy, interactivity)
+transcript (from captions, in-browser Whisper, or metadata fallback)
+  → text metrics (vocabulary, utterance length, question rate)
   → LLM semantic pass (Claude, optional — gated by ANTHROPIC_API_KEY)
+  → narrative coherence
+  → heuristic metrics (language, SEL, narrative, fantasy, interactivity)
   → guardrails (validate → repair-retry → safety floor → abstention)
   → score (age-band normalized)
   → cache (Supabase upsert)
   → FHIR R4 export (on request)
 ```
+
+A full local pipeline (`download → ffmpeg → local Whisper → visual/audio
+pacing`) also exists in `ai-agents/` for running the complete multimodal
+analysis offline, where YouTube's bot-detection does not apply.
 
 ### Guardrails
 
@@ -107,12 +122,17 @@ Auto-deploy on push to `main` via [`.github/workflows/deploy.yml`](.github/workf
 ## API
 
 ```
-POST /evaluate          Submit job — returns { job_id, status } immediately (HTTP 202)
-GET  /evaluate/{id}     Poll job status / result
-GET  /evaluate/{id}/fhir  FHIR R4 Bundle for completed job
-GET  /health            Liveness check
-GET  /docs              Auto-generated OpenAPI docs
+POST /evaluate             Submit a URL (server-side download) — { job_id, status }, HTTP 202
+POST /evaluate/transcript  Submit transcript segments (browser-side) — { job_id, status }
+POST /evaluate/metadata    Title/channel-only estimate (no transcript available)
+GET  /evaluate/{id}        Poll job status / result
+GET  /evaluate/{id}/fhir   FHIR R4 Bundle for completed job
+GET  /health               Liveness check
+GET  /docs                 Auto-generated OpenAPI docs
 ```
+
+The Chrome extension uses `/evaluate/transcript` (and `/evaluate/metadata` as a
+fallback); `/evaluate` is the server-side path for offline/local use.
 
 Full API docs: [ai-agents/README.md](ai-agents/README.md)
 
@@ -187,6 +207,10 @@ MindSafe/
 │   ├── tests/
 │   └── Dockerfile
 ├── chrome_extension/       Chrome MV3 extension
+│   ├── content_script.js   Caption fetch + score card injection
+│   ├── whisper.js          In-browser Whisper transcription (transformers.js)
+│   ├── background.js       Service worker — API calls + polling
+│   └── vendor/             Bundled transformers.js + ONNX runtime WASM
 ├── frontend/               Flask landing page + history dashboard
 ├── infra/                  ECS task definitions + deploy scripts
 ├── docker-compose.yml      Local dev (with Jaeger)

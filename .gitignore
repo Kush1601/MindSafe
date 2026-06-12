@@ -34,12 +34,14 @@ __pycache__/
 *.egg-info/
 .eggs/
 
-# Env files
+# Env files (but keep the example template)
 .env
 .env.*
 *.env
 *.env.local
 *.secret
+!.env.example
+!*/.env.example
 
 # Local Flask instance / cache
 instance/

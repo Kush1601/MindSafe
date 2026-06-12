@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>MindSafe — Analysis result</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <style>
+        .result-wrap { max-width: 720px; margin: 60px auto; padding: 0 20px; }
+        .result-card {
+            background: #fff; border: 1px solid #e6e8ef; border-radius: 20px;
+            padding: 36px; box-shadow: 0 12px 40px rgba(20, 30, 80, 0.08);
+        }
+        .result-scores { display: flex; gap: 32px; flex-wrap: wrap; margin: 24px 0; }
+        .result-score__num { font-size: 48px; font-weight: 800; color: #0f1733; line-height: 1; }
+        .result-score__num small { font-size: 20px; color: #8a90ad; font-weight: 600; }
+        .result-score__label { color: #5a6184; font-size: 14px; margin-top: 6px; }
+        .result-verdict {
+            display: inline-block; padding: 6px 16px; border-radius: 999px;
+            font-weight: 700; font-size: 15px;
+        }
+        .verdict--good { background: #e6f9ef; color: #1a7f4b; }
+        .verdict--mid { background: #fff5e6; color: #b5701a; }
+        .verdict--bad { background: #fdeaea; color: #c0392b; }
+        .result-summary { color: #3a4063; line-height: 1.7; margin-top: 20px; }
+        .result-note {
+            margin-top: 16px; padding: 12px 16px; background: #f4f6fb;
+            border-radius: 12px; color: #6a7090; font-size: 13px;
+        }
+        .result-url { color: #8a90ad; font-size: 13px; word-break: break-all; }
+        .result-actions { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .result-error { color: #c0392b; font-size: 18px; }
+    </style>
+</head>
+
+<body>
+    <header class="nav">
+        <div class="nav__inner container">
+            <div class="nav__brand">
+                <div class="nav__logo-icon">
+                    <a href="/"><img class="nav__logo-image" src="/static/img/mind.png" alt="MindSafe logo" /></a>
+                </div>
+                <span class="nav__logo-text">MindSafe</span>
+            </div>
+            <nav class="nav__links">
+                <a href="/">Home</a>
+                <a href="/history">History</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="result-wrap">
+        <div class="result-card">
+            {% if error %}
+            <p class="result-error">⚠️ {{ error }}</p>
+            <div class="result-actions">
+                <a href="{{ url_for('form') }}" class="btn btn--primary">Try another video</a>
+            </div>
+            {% else %}
+            {% set verdict = (interp.overall or '') | lower %}
+            {% if 'not recommend' in verdict or (ten and ten < 5) %}
+                {% set vclass = 'verdict--bad' %}
+            {% elif 'recommend' in verdict or 'suitable' in verdict or (ten and ten >= 8) %}
+                {% set vclass = 'verdict--good' %}
+            {% else %}
+                {% set vclass = 'verdict--mid' %}
+            {% endif %}
+
+            <span class="result-verdict {{ vclass }}">{{ interp.overall or 'Analyzed' }}</span>
+
+            <div class="result-scores">
+                <div>
+                    <div class="result-score__num">{{ ten if ten is not none else '—' }}<small>/10</small></div>
+                    <div class="result-score__label">Overall ({{ dev_score | round(0) | int if dev_score is not none else '—' }}/100 developmental)</div>
+                </div>
+                <div>
+                    <div class="result-score__num">{{ brainrot | round(0) | int if brainrot is not none else '—' }}<small>/100</small></div>
+                    <div class="result-score__label">Brainrot index (lower is better)</div>
+                </div>
+            </div>
+
+            {% if summary %}
+            <p class="result-summary">{{ summary }}</p>
+            {% endif %}
+
+            {% if mode == 'metadata_only' %}
+            <div class="result-note">
+                {{ note or 'This is a title-based estimate.' }} For full transcript analysis,
+                install the <a href="/download-extension">Chrome extension</a> — it reads captions
+                or transcribes audio in your browser.
+            </div>
+            {% endif %}
+
+            <p class="result-url" style="margin-top:20px;">{{ url }}</p>
+
+            <div class="result-actions">
+                <a href="{{ url_for('form') }}" class="btn btn--primary">Analyze another</a>
+                <a href="/history" class="btn btn--secondary">View history</a>
+            </div>
+            {% endif %}
+        </div>
+        <p style="text-align:center; color:#9aa0bd; font-size:12px; margin-top:16px;">
+            AI analysis — informational only, not medical advice.
+        </p>
+    </div>
+</body>
+
+</html>

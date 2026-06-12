@@ -26,7 +26,7 @@ from typing import Any
 
 import structlog
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
@@ -165,18 +165,7 @@ def _validate_youtube_url(url: str) -> bool:
     ))
 
 
-def _canonical_url(url: str | None) -> str | None:
-    """
-    Normalize a YouTube URL to https://www.youtube.com/watch?v=<id> so cache
-    keys and featured-video lookups match regardless of extra params
-    (&t=, &list=, youtu.be short links, etc.).
-    """
-    if not url:
-        return url
-    m = re.search(r"(?:v=|youtu\.be/|/shorts/)([A-Za-z0-9_-]{11})", url)
-    if m:
-        return f"https://www.youtube.com/watch?v={m.group(1)}"
-    return url
+from evaluation.utils import canonical_youtube_url as _canonical_url
 
 
 def _get_cached(video_url: str) -> dict | None:
@@ -245,7 +234,7 @@ def _run_pipeline(job_id: str, youtube_url: str, child_age: float) -> None:
     event loop. Updates _jobs[job_id] when done or failed.
     """
     from evaluation.deid import pseudonymize_url
-    from evaluation.evaluate_video import evaluate_video, save_results
+    from evaluation.evaluate_video import evaluate_video
 
     _jobs[job_id]["status"] = "processing"
     log.info("job.start", job_id=job_id, video_id=pseudonymize_url(youtube_url), age=child_age)
@@ -420,7 +409,7 @@ def health():
 
 
 @app.post("/evaluate", status_code=202, dependencies=[Depends(_check_api_key)])
-def submit_evaluation(body: EvaluateRequest, background_tasks: BackgroundTasks):
+def submit_evaluation(body: EvaluateRequest):
     """
     Submit a video for evaluation. Returns a job_id immediately (HTTP 202).
     Poll GET /evaluate/{job_id} for results.

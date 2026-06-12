@@ -3,7 +3,7 @@ from pathlib import Path
 from io import BytesIO
 import zipfile
 
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file, request
 from dotenv import load_dotenv
 
 # Share the AI API's .env so Supabase credentials are configured in one place.
@@ -89,12 +89,76 @@ def partial(name):
         return render_template("shows.html", cards=_featured_with_scores())
     return render_template(f"{name}.html")
 
-@app.route("/loader")
-def loader():
-    return render_template("loader.html")
-@app.route("/data")
-def data():
-    return render_template("data.html")
+MINDSAFE_API_URL = os.getenv("MINDSAFE_API_URL", "http://localhost:5001")
+
+
+@app.route("/analyze")
+def analyze():
+    """
+    Real evaluation flow: take a YouTube URL, call the MindSafe API
+    (metadata mode — server-side download is blocked by YouTube, so the web
+    app uses the title-based estimate), poll for the result, and render it.
+
+    For full transcript analysis, users install the Chrome extension, which
+    fetches captions / runs in-browser Whisper from their own session.
+    """
+    url = (request.args.get("url") or "").strip()
+    if not url:
+        return render_template("results.html", error="Please enter a YouTube URL.")
+
+    import time
+    import requests
+
+    # Derive a title from the URL for the metadata estimate. The extension
+    # passes the real page title; from the web app we only have the URL, so we
+    # send the video id and let the API/LLM work from that.
+    try:
+        age = float(request.args.get("age", 6))
+    except ValueError:
+        age = 6.0
+
+    try:
+        submit = requests.post(
+            f"{MINDSAFE_API_URL}/evaluate/metadata",
+            json={"title": url, "age": age, "url": url},
+            timeout=10,
+        )
+        submit.raise_for_status()
+        job_id = submit.json()["job_id"]
+    except Exception as e:
+        return render_template("results.html", error=f"Could not reach the analysis service: {e}")
+
+    # Poll for completion (metadata mode is fast, a few seconds).
+    result = None
+    for _ in range(20):
+        time.sleep(1)
+        try:
+            poll = requests.get(f"{MINDSAFE_API_URL}/evaluate/{job_id}", timeout=10)
+            job = poll.json()
+        except Exception:
+            continue
+        if job.get("status") == "done":
+            result = job.get("result")
+            break
+        if job.get("status") == "failed":
+            return render_template("results.html", error=job.get("error", "Analysis failed."))
+
+    if result is None:
+        return render_template("results.html", error="Analysis timed out. Please try again.")
+
+    overall = result.get("overall_scores", {})
+    dev = overall.get("development_score")
+    return render_template(
+        "results.html",
+        url=url,
+        dev_score=dev,
+        ten=(max(1, min(10, round(dev / 10))) if dev is not None else None),
+        brainrot=overall.get("brainrot_index"),
+        interp=result.get("interpretations", {}),
+        summary=result.get("parent_summary"),
+        mode=result.get("metadata", {}).get("analysis_mode"),
+        note=result.get("metadata", {}).get("note"),
+    )
 
 
 @app.route("/history")

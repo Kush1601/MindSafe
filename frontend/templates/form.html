@@ -10,7 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Link to Form CSS file -->
-    <link rel="stylesheet" href="../static/css/form.css">
+    <link rel="stylesheet" href="/static/css/form.css">
 </head>
 
 <body class="bg-blue-50 font-sans text-gray-800">
@@ -82,7 +82,7 @@
             <h1 class="text-4xl font-bold text-center text-gray-900 mb-2">MindSafe: Check it out!</h1>
             <br/>
 
-            <form id="summarize-form" action="{{ url_for('loader') }}" method="get" novalidate>
+            <form id="summarize-form" action="{{ url_for('analyze') }}" method="get" novalidate>
                 <div class="space-y-4">
                     <!-- URL Field -->
                     <div>
@@ -100,7 +100,7 @@
                         </div>
 
                         <br />
-                        <input type="url" id="url-input" name="url" required placeholder="https://www.example.com"
+                        <input type="url" id="url-input" name="url" required placeholder="https://www.youtube.com/watch?v=..."
                             class="mt-1 block w-full px-4 py-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg" required>
                     </div>
 

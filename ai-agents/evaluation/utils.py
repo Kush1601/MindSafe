@@ -3,9 +3,24 @@ Utility functions for the evaluation system.
 """
 
 import os
+import re
 import json
 from typing import Dict, Any, Optional, List
 from pathlib import Path
+
+
+def canonical_youtube_url(url: Optional[str]) -> Optional[str]:
+    """
+    Normalize a YouTube URL to https://www.youtube.com/watch?v=<id> so cache
+    keys and featured-video lookups match regardless of extra params
+    (&t=, &list=, youtu.be short links, /shorts/, etc.).
+    """
+    if not url:
+        return url
+    m = re.search(r"(?:v=|youtu\.be/|/shorts/)([A-Za-z0-9_-]{11})", url)
+    if m:
+        return f"https://www.youtube.com/watch?v={m.group(1)}"
+    return url
 
 
 def load_evaluation_results(json_path: str) -> Dict[str, Any]:
