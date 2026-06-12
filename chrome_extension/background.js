@@ -8,7 +8,7 @@
 // To override without editing this file, open the extension's options page
 // (or chrome.storage.local.set({ apiBaseUrl: "https://..." }) in DevTools).
 //
-const DEFAULT_API_BASE_URL = "http://localhost:5001";
+const DEFAULT_API_BASE_URL = "http://mindsafe.duckdns.org:5001";
 const DEFAULT_CHILD_AGE = 4; // years
 
 // Resolve base URL from storage (allows runtime override without a rebuild)

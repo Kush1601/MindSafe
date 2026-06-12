@@ -2,7 +2,7 @@
 
 A clinical-AI pipeline that evaluates YouTube and YouTube Kids videos for developmental appropriateness, delivering a 1–10 safety score directly inside the browser.
 
-**🔗 Live demo:** [Web app](http://100.54.74.194:5000) · [API health](http://100.54.74.194:5001/health) · [Evaluation history](http://100.54.74.194:5000/history)
+**🔗 Live demo:** [Web app](http://mindsafe.duckdns.org:5000) · [API health](http://mindsafe.duckdns.org:5001/health) · [Evaluation history](http://mindsafe.duckdns.org:5000/history)
 
 > The hosted demo runs on a single EC2 instance over HTTP (no TLS), so your
 > browser may warn "Not secure" — that's expected for a portfolio demo. The
