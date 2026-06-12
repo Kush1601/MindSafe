@@ -668,3 +668,44 @@ body {
     align-items: center;
   }
 }
+
+/* ===== How It Works grid ===== */
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+.how-step {
+  background: #fff;
+  border: 1px solid #e6e8ef;
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 8px 24px rgba(20, 30, 80, 0.06);
+}
+.how-step__num {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  background: #3b5bff;
+  margin-bottom: 16px;
+}
+.how-step__title {
+  font-size: 18px;
+  margin: 0 0 8px;
+  color: #0f1733;
+}
+.how-step__text {
+  margin: 0;
+  color: #5a6184;
+  line-height: 1.6;
+  font-size: 15px;
+}
+@media (max-width: 860px) {
+  .how-grid { grid-template-columns: 1fr; }
+}

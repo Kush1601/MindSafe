@@ -34,6 +34,16 @@ def index():
 def form():
     return render_template("form.html")
 
+
+# Section partials, loaded into index.html via fetch(). Served explicitly
+# because Flask does not expose the raw templates/ directory.
+@app.route("/partials/<name>")
+def partial(name):
+    allowed = {"metrics", "shows", "extension"}
+    if name not in allowed:
+        return ("Not found", 404)
+    return render_template(f"{name}.html")
+
 @app.route("/loader")
 def loader():
     return render_template("loader.html")

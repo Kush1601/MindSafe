@@ -3,9 +3,9 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>MindSafe</title>
+    <title>MindSafe — Developmental safety analysis for kids' videos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="../static/css/styles.css" />
+    <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
 
 <body>
@@ -22,10 +22,10 @@
             </div>
 
             <nav class="nav__links">
-                <a href="#shows">Examples</a>
+                <a href="#how">How It Works</a>
                 <a href="#metrics">Metrics</a>
                 <a href="#extension">Extension</a>
-                <a href="#demo">How It Works</a>
+                <a href="/history">History</a>
             </nav>
 
             <div class="nav__cta">
@@ -40,28 +40,29 @@
             <div class="hero__inner container">
                 <!-- Left column -->
                 <div class="hero__content">
-                    <!-- <p class="hero__eyebrow">AI-powered neurosurgical planning</p> -->
                     <h1 class="hero__title">
-                        We know quality kids' media
+                        Is this video good for your kid?
                     </h1>
                     <p class="hero__subtitle">
-                        MindSafe's experts, Oxford and Yale-trained in childhood development, are here to help you make
-                        confident and informed choices about screen time.
+                        MindSafe analyzes a YouTube video's transcript and scores it on six
+                        developmental dimensions — pacing, language, story, social-emotional
+                        learning, fantasy, and interactivity — to flag content that may be
+                        overstimulating for young children.
                     </p>
 
                     <div class="hero__actions">
-                        <a href="/templates/index.html" class="btn btn--primary">Start Free Trial</a>
-                        <a href="#demo" class="btn btn--secondary">View Demo</a>
+                        <a href="{{ url_for('form') }}" class="btn btn--primary">Analyze a video</a>
+                        <a href="#how" class="btn btn--secondary">How it works</a>
                     </div>
 
                     <div class="hero__badges">
                         <div class="badge">
                             <span class="badge__icon">✓</span>
-                            <span class="badge__text">Trusted by childhood development experts</span>
+                            <span class="badge__text">Age-banded developmental scoring</span>
                         </div>
                         <div class="badge">
                             <span class="badge__icon">✓</span>
-                            <span class="badge__text">Oxford and Yale-trained experts</span>
+                            <span class="badge__text">On-device transcription, no video leaves your browser</span>
                         </div>
                     </div>
                 </div>
@@ -70,7 +71,7 @@
                     <div class="hero__media-inner">
                         <div class="hero__brain">
                             <img class="hero__brain-image" src="/static/img/young-boy-watching-tablet.jpg"
-                                alt="3D Brain Simulation" />
+                                alt="Child watching a tablet" />
                         </div>
                     </div>
                 </div>
@@ -78,65 +79,52 @@
         </section>
     </main>
 
-
-    <!-- ====== TRUSTED BY SECTION ====== -->
-    <section class="trust">
-        <div class="container trust__inner">
-            <p class="trust__label">
-                TRUSTED BY LEADING HOSPITALS AND RESEARCH INSTITUTIONS
-            </p>
-            <div class="trust__logos">
-                <span>Johns Hopkins</span>
-                <span>Mayo Clinic</span>
-                <span>Stanford Health</span>
-                <span>Mass General</span>
-                <span>Cleveland Clinic</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====== DEMO SECTION (“See it in action”) ====== -->
-    <section class="demo" id="demo">
+    <!-- ====== HOW IT WORKS ====== -->
+    <section class="demo" id="how">
         <div class="container demo__inner">
             <div class="demo__header">
-                <h2 class="demo__title">See it in action</h2>
+                <h2 class="demo__title">How it works</h2>
                 <p class="demo__subtitle">
-                    Watch how MindSafe transforms surgical planning with real-time 3D simulation
-                    and AI analysis.
+                    A three-tier analysis pipeline that always returns a result — and never
+                    sends the video off your device.
                 </p>
             </div>
 
-            <div class="demo-card">
-                <div class="demo-card__inner">
-                    <!-- Play button / overlay -->
-                    <!-- <button class="demo-card__play" type="button">
-              <span class="demo-card__play-ring"></span>
-              <span class="demo-card__play-circle">
-                <span class="demo-card__play-icon">▶</span>
-              </span>
-            </button> -->
-
-                    <!-- <div class="demo-card__meta">
-              <div class="demo-card__label">Watch Demo</div>
-              <div class="demo-card__duration">3 minutes</div>
-            </div> -->
-
-                    <!-- Optional REAL video (replace src and remove the comment when ready) -->
-
-                    <video class="demo-card__video" src="../static/img/rick.mp4" controls></video>
-
+            <div class="how-grid">
+                <div class="how-step">
+                    <div class="how-step__num">1</div>
+                    <h3 class="how-step__title">Captions</h3>
+                    <p class="how-step__text">
+                        If the video has captions, MindSafe pulls the transcript straight from
+                        your browser session and analyzes it instantly.
+                    </p>
+                </div>
+                <div class="how-step">
+                    <div class="how-step__num">2</div>
+                    <h3 class="how-step__title">In-browser Whisper</h3>
+                    <p class="how-step__text">
+                        No captions? A Whisper speech-to-text model runs locally in your browser
+                        (WebGPU / WASM) to transcribe the audio — no server, no upload.
+                    </p>
+                </div>
+                <div class="how-step">
+                    <div class="how-step__num">3</div>
+                    <h3 class="how-step__title">Scoring</h3>
+                    <p class="how-step__text">
+                        The transcript is scored across six dimensions, age-normalized, and
+                        passed through LLM safety guardrails before a recommendation is shown.
+                    </p>
                 </div>
             </div>
         </div>
     </section>
-    </main>
 
     <!-- Metrics section -->
     <div id="metrics"></div>
 
     <!-- Example section -->
     <div id="shows"></div>
-    
+
     <!-- Extension section -->
     <div id="extension"></div>
 
@@ -145,26 +133,17 @@
         <div class="cta-footer__gradient">
             <div class="container cta-footer__inner">
                 <div class="cta-footer__content">
-                    <h2 class="cta-footer__title">Become a MindSafe Parent</h2>
+                    <h2 class="cta-footer__title">Try it on a real video</h2>
                     <p class="cta-footer__text">
-                        Join our waitlist and get ready for stress-free screen time with
-                        families like yours. Get community playlists, expert-backed
-                        recommendations, and early product updates. We’ll never sell your
-                        data, and we’re staunch enemies of spam!
+                        Install the Chrome extension and open any YouTube watch page — MindSafe
+                        injects a developmental safety score into the page in seconds. Or analyze
+                        a single URL from the web app.
                     </p>
 
-                    <p class="cta-footer__legal">
-                        By sharing your email you explicitly accept our
-                        <a href="#" class="cta-footer__link">Terms</a> and
-                        <a href="#" class="cta-footer__link">Privacy Policy</a>.
-                    </p>
-
-                    <form class="cta-footer__form">
-                        <input type="email" class="cta-footer__input" placeholder="name@email.com" required />
-                        <button type="submit" class="btn btn--footer-primary">
-                            Join the Waitlist
-                        </button>
-                    </form>
+                    <div class="hero__actions">
+                        <a href="/download-extension" class="btn btn--footer-primary">Download extension</a>
+                        <a href="{{ url_for('form') }}" class="btn btn--secondary">Analyze a URL</a>
+                    </div>
                 </div>
 
                 <!-- Cute animal on the right -->
@@ -176,11 +155,11 @@
         <footer class="site-footer">
             <div class="container site-footer__inner">
                 <div class="site-footer__links">
-                    <a href="#">Terms and Conditions</a>
+                    <a href="/history">Evaluation history</a>
                     <span>•</span>
-                    <a href="#">Privacy Policy</a>
+                    <a href="{{ url_for('form') }}">Analyze a video</a>
                     <span>•</span>
-                    <a href="#">Contact us</a>
+                    <a href="https://github.com/Kush1601/MindSafe">Source</a>
                 </div>
 
                 <div class="nav__brand">
@@ -195,35 +174,18 @@
         </footer>
     </section>
 
-    <!-- Scripts -->
+    <!-- Scripts: load section partials from Flask partial routes -->
     <script>
-        fetch('../templates/metrics.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('metrics').innerHTML = html;
-            })
-            .catch(err => console.error('Error loading metrics:', err));
+        function loadPartial(id, name) {
+            fetch('/partials/' + name)
+                .then((r) => r.text())
+                .then((html) => { document.getElementById(id).innerHTML = html; })
+                .catch((err) => console.error('Error loading ' + name + ':', err));
+        }
+        loadPartial('metrics', 'metrics');
+        loadPartial('shows', 'shows');
+        loadPartial('extension', 'extension');
     </script>
-
-    <script>
-        fetch('../templates/shows.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('shows').innerHTML = html;
-            })
-            .catch(err => console.error('Error loading metrics:', err));
-    </script>
-
-    <script>
-        fetch('../templates/extension.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('extension').innerHTML = html;
-            })
-            .catch(err => console.error('Error loading extension:', err));
-    </script>
-
-    <script src="/static/js/app.js"></script>
 </body>
 
 </html>
