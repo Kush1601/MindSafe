@@ -496,6 +496,21 @@ def submit_metadata_evaluation(body: EvaluateMetadataRequest):
     captions, so neither transcript nor server-side download is possible.
     Lower confidence; result is flagged analysis_mode == "metadata_only".
     """
+    # Prefer a real cached evaluation (e.g. a full transcript analysis from the
+    # extension) over a fresh title-only estimate.
+    if body.url:
+        cached = _get_cached(body.url)
+        if cached is not None:
+            job_id = str(uuid.uuid4())[:8]
+            now = datetime.now(UTC).isoformat()
+            _jobs[job_id] = {
+                "job_id": job_id, "status": "done",
+                "submitted_at": now, "completed_at": now,
+                "result": cached, "error": None,
+            }
+            log.info("evaluate.cache_hit", job_id=job_id, mode="metadata")
+            return {"job_id": job_id, "status": "done", "cache_hit": True}
+
     job_id = str(uuid.uuid4())[:8]
     _jobs[job_id] = {
         "job_id": job_id, "status": "queued",
