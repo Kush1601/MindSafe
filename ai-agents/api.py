@@ -204,6 +204,14 @@ def _save_to_supabase(video_url: str, child_age: float, results: dict) -> None:
         overall  = results.get("overall_scores", {}) or {}
         interp   = results.get("interpretations", {}) or {}
         recs     = results.get("recommendations", {}) or {}
+
+        # Never let a low-confidence title-only estimate overwrite an existing
+        # transcript-based analysis for the same video.
+        if metadata.get("analysis_mode") == "metadata_only":
+            existing = _get_cached(video_url)
+            if existing and existing.get("dimension_scores"):
+                log.info("cache.skip_downgrade", url_hash=video_url[:20])
+                return
         payload = {
             "video_path": video_url,
             "child_age": metadata.get("child_age", child_age),

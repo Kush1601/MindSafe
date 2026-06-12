@@ -146,18 +146,35 @@ def analyze():
     if result is None:
         return render_template("results.html", error="Analysis timed out. Please try again.")
 
+    # The result can arrive in two shapes:
+    #  - nested (fresh job): overall_scores{}, interpretations{}, metadata{}
+    #  - flat (Supabase cache hit): dev_score, brainrot_index, overall_recommendation
     overall = result.get("overall_scores", {})
-    dev = overall.get("development_score")
+    if overall:
+        dev = overall.get("development_score")
+        brainrot = overall.get("brainrot_index")
+        verdict = result.get("interpretations", {}).get("overall")
+        summary = result.get("parent_summary")
+        mode = result.get("metadata", {}).get("analysis_mode")
+        note = result.get("metadata", {}).get("note")
+    else:
+        dev = result.get("dev_score")
+        brainrot = result.get("brainrot_index")
+        verdict = result.get("overall_recommendation")
+        summary = None
+        mode = None
+        note = None
+
     return render_template(
         "results.html",
         url=url,
         dev_score=dev,
         ten=(max(1, min(10, round(dev / 10))) if dev is not None else None),
-        brainrot=overall.get("brainrot_index"),
-        interp=result.get("interpretations", {}),
-        summary=result.get("parent_summary"),
-        mode=result.get("metadata", {}).get("analysis_mode"),
-        note=result.get("metadata", {}).get("note"),
+        brainrot=brainrot,
+        interp={"overall": verdict} if verdict else {},
+        summary=summary,
+        mode=mode,
+        note=note,
     )
 
 
