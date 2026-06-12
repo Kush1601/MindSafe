@@ -32,38 +32,12 @@ function getCleanTitle() {
   return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
 }
 
-// Ask YouTube's own innertube player endpoint for the caption track list.
-// Runs in the user's session (cookies), so it works where server-side fails.
-// Content scripts can't read the page's ytInitialPlayerResponse (isolated
-// world), so we fetch the player response ourselves.
-function extractTracks(data) {
-  const tr =
-    data &&
-    data.captions &&
-    data.captions.playerCaptionsTracklistRenderer &&
-    data.captions.playerCaptionsTracklistRenderer.captionTracks;
-  return tr && tr.length ? tr : null;
-}
-
-async function playerRequest(videoId, client) {
-  const INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-  const resp = await fetch(
-    `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ videoId, context: { client } }),
-      credentials: "include",
-    }
-  );
-  if (!resp.ok) throw new Error(`player ${resp.status}`);
-  return resp.json();
-}
-
+// Get the caption track list by scraping the watch page HTML, which embeds a
+// "captionTracks" JSON blob. Runs in the user's session (cookies), so it works
+// where server-side fetches are bot-blocked. Content scripts can't read the
+// page's ytInitialPlayerResponse directly (isolated world), so we re-fetch the
+// page HTML and parse it.
 async function getCaptionTracks(videoId) {
-  // 1) Scrape the watch page HTML for the caption track JSON.
-  // This is the most reliable method — the page itself embeds captionTracks,
-  // and YouTube now rejects hand-rolled innertube/player API calls.
   try {
     const html = await (await fetch(location.href, { credentials: "include" })).text();
     const m = html.match(/"captionTracks":(\[.*?\])/);
@@ -71,15 +45,7 @@ async function getCaptionTracks(videoId) {
       const tracks = JSON.parse(m[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"'));
       if (tracks.length) return tracks;
     }
-  } catch (e) { console.warn("[MindSafe] HTML scrape failed:", e); }
-
-  // 2) Fallback: innertube WEB client (works for some videos)
-  try {
-    const t = extractTracks(await playerRequest(videoId, {
-      clientName: "WEB", clientVersion: "2.20240101.00.00", hl: "en",
-    }));
-    if (t) return t;
-  } catch (e) { console.warn("[MindSafe] WEB player failed:", e); }
+  } catch (e) { console.warn("[MindSafe] caption track lookup failed:", e); }
 
   return null;
 }
